@@ -8,7 +8,7 @@ import datetime
 from bs4 import BeautifulSoup
 
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
-API_URL_TSUMINO = 'http://www.tsumino.com/Book/Info/'
+API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/'
 LINK_URL_NHENTAI = "https://nhentai.net/g/"
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
