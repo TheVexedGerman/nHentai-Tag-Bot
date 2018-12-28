@@ -221,6 +221,7 @@ def writeCommentReply(replyString, comment):
 
 
 def main():
+    global reddit
     reddit = authenticate()
     global messagesRepliedTo
     messagesRepliedTo = getSavedMessages()
@@ -346,6 +347,53 @@ def getNhentaiNumber(comment):
     return numbers
 
 
+def getNumbers(comment):
+    numbersCombi = []
+    numbersCombi = keyWordDetection(comment)
+    if not numbersCombi:
+        nhentaiNumbers = getNhentaiNumber(comment.body)
+        tsuminoNumbers = getTsuminoNumbers(comment.body)
+        numbersCombi = [nhentaiNumbers, tsuminoNumbers]
+    return numbersCombi
+
+
+def keyWordDetection(comment):
+    foundNumbers = []
+    if "!Tags" in comment.body:
+        foundNumbers = scanForURL(comment.body)
+        if not foundNumbers:
+            parent = comment.parent_id
+            commentParent = re.findall(r'(?<=t1_).*', parent)
+            if commentParent:
+                comment = reddit.comment(commentParent[0])
+                foundNumbers = scanForURL(comment.body)
+    return foundNumbers
+
+
+def scanForURL(comment):
+    nhentaiNumbers = []
+    tsuminoNumbers = []
+
+    nhentaiNumbers = re.findall(r'(?<=https?:\/\/(www.)?nhentai.net\/g\/)\d+', comment)
+    try:
+        nhentaiNumbers = [int(number) for number in nhentaiNumbers]
+    except ValueError:
+        nhentaiNumbers = []
+    nhentaiNumbers = removeDuplicates(nhentaiNumbers)
+
+    commentLower = comment.lower()
+    tsuminoNumbers = re.findall(r'(?<=https?:\/\/(www.)?tsumino.com\/book\/info\/)\d+', commentLower)
+    if not tsuminoNumbers:
+        tsuminoNumbers = re.findall(r'(?<=https?:\/\/(www.)?tsumino.com\/read\/view\/)\d+', commentLower)
+    try:
+        tsuminoNumbers = [int(nhentaiNumbers) for number in tsuminoNumbers]
+    except ValueError:
+        tsuminoNumbers = []
+    
+    if nhentaiNumbers or tsuminoNumbers:
+        return [nhentaiNumbers, tsuminoNumbers]
+    return []
+
 def getTsuminoNumbers(comment):
     numbers = re.findall(r'(?<=\))\d{5}(?=\()', comment)
     try:
@@ -367,18 +415,13 @@ def getSavedMessages():
 
     return messagesRepliedTo
 
-def getNumbers(comment):
-    nhentaiNumbers = getNhentaiNumber(comment)
-    tsuminoNumbers = getTsuminoNumbers(comment)
-    return [nhentaiNumbers, tsuminoNumbers]
-
 
 def processComment(comment):
     if comment.id not in messagesRepliedTo:
         replyString = ""
         nhentai = 0
         tsumino = 1
-        numbersCombi = getNumbers(comment.body)
+        numbersCombi = getNumbers(comment)
         if numbersCombi:
             if numbersCombi[nhentai]:
                 numbers = numbersCombi[nhentai]
@@ -468,7 +511,7 @@ def generateLinks(number, isNhentai=True):
 
 def scanPM(message):
     linkString = ""
-    numbersCombi = getNumbers(message.body)
+    numbersCombi = getNumbers(message)
     numberOfInts = len(numbersCombi[0])+len(numbersCombi[1])
     if (numberOfInts) > 0:
         if numberOfInts == 1:
@@ -502,7 +545,6 @@ def processCommentReply(comment, reddit):
             #     nhnumbers = [int(number) for number in numbers]
             # except ValueError:
             #     numbers = []
-
 
 
 if __name__ == '__main__':
