@@ -359,7 +359,7 @@ def getNumbers(comment):
 
 def keyWordDetection(comment):
     foundNumbers = []
-    if "!Tags" in comment.body:
+    if "!tags" in comment.body.lower():
         foundNumbers = scanForURL(comment.body)
         if not foundNumbers:
             parent = comment.parent_id
