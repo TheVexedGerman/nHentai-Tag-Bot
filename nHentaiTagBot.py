@@ -8,11 +8,12 @@ import datetime
 from bs4 import BeautifulSoup
 
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
-API_URL_TSUMINO = 'http://www.tsumino.com/Book/Info/'
+API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/'
 LINK_URL_NHENTAI = "https://nhentai.net/g/"
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
 PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource'
+# PARSED_SUBREDDIT = 'loli_tag_bot'
 
 messagesRepliedTo = []
 
@@ -221,6 +222,7 @@ def writeCommentReply(replyString, comment):
 
 
 def main():
+    global reddit
     reddit = authenticate()
     global messagesRepliedTo
     messagesRepliedTo = getSavedMessages()
@@ -346,6 +348,66 @@ def getNhentaiNumber(comment):
     return numbers
 
 
+def getNumbers(comment):
+    numbersCombi = []
+    numbersCombi = keyWordDetection(comment)
+    if not numbersCombi:
+        nhentaiNumbers = getNhentaiNumber(comment.body)
+        tsuminoNumbers = getTsuminoNumbers(comment.body)
+        numbersCombi = [nhentaiNumbers, tsuminoNumbers]
+    return numbersCombi
+
+
+def keyWordDetection(comment):
+    foundNumbers = []
+    if "!tags" in comment.body.lower():
+        foundNumbers = scanForURL(comment.body)
+        if not foundNumbers:
+            parent = comment.parent_id
+            commentParent = re.findall(r'(?<=t1_).*', parent)
+            if commentParent:
+                comment = reddit.comment(commentParent[0])
+                foundNumbers = scanForURL(comment.body)
+    return foundNumbers
+
+
+def scanForURL(comment):
+    nhentaiNumbers = []
+    tsuminoNumbers = []
+
+    nhentaiLinks = re.findall(r'https?:\/\/(?:www.)?nhentai.net\/g\/\d{1,6}', comment)
+    print(nhentaiLinks)
+    try:
+        nhentaiNumbers = [re.search(r'\d+', link).group(0) for link in nhentaiLinks]
+    except AttributeError:
+        print("No nHentai links")
+    try:
+        nhentaiNumbers = [int(number) for number in nhentaiNumbers]
+    except ValueError:
+        nhentaiNumbers = []
+    print("Pre deduplication N")
+    nhentaiNumbers = removeDuplicates(nhentaiNumbers)
+    print("Post deduplication N")
+    print("Lowercase comments")
+    commentLower = comment.lower()
+    print(commentLower)
+    tsuminoLinks = re.findall(r'https?:\/\/(?:www.)?tsumino.com\/book\/info\/\d{1,5}', commentLower)
+    print(tsuminoLinks)
+    tsuminoLinks += re.findall(r'https?:\/\/(?:www.)?tsumino.com\/read\/view\/\d{1,5}', commentLower)
+    print(tsuminoLinks)
+    try:
+        tsuminoNumbers = [re.search(r'\d+', link).group(0) for link in tsuminoLinks]
+    except AttributeError:
+        print("No Tsumino links")
+    try:
+        tsuminoNumbers = [int(number) for number in tsuminoNumbers]
+    except ValueError:
+        tsuminoNumbers = []
+    if nhentaiNumbers or tsuminoNumbers:
+        print("true return")
+        return [nhentaiNumbers, tsuminoNumbers]
+    return []
+
 def getTsuminoNumbers(comment):
     numbers = re.findall(r'(?<=\))\d{5}(?=\()', comment)
     try:
@@ -367,18 +429,13 @@ def getSavedMessages():
 
     return messagesRepliedTo
 
-def getNumbers(comment):
-    nhentaiNumbers = getNhentaiNumber(comment)
-    tsuminoNumbers = getTsuminoNumbers(comment)
-    return [nhentaiNumbers, tsuminoNumbers]
-
 
 def processComment(comment):
     if comment.id not in messagesRepliedTo:
         replyString = ""
         nhentai = 0
         tsumino = 1
-        numbersCombi = getNumbers(comment.body)
+        numbersCombi = getNumbers(comment)
         if numbersCombi:
             if numbersCombi[nhentai]:
                 numbers = numbersCombi[nhentai]
@@ -468,7 +525,7 @@ def generateLinks(number, isNhentai=True):
 
 def scanPM(message):
     linkString = ""
-    numbersCombi = getNumbers(message.body)
+    numbersCombi = getNumbers(message)
     numberOfInts = len(numbersCombi[0])+len(numbersCombi[1])
     if (numberOfInts) > 0:
         if numberOfInts == 1:
@@ -504,10 +561,11 @@ def processCommentReply(comment, reddit):
             #     numbers = []
 
 
+# if __name__ == '__main__':
+#     while True:
+#         try:
+#             main()
+#         except Exception as e:
+#             pass
 
-if __name__ == '__main__':
-    while True:
-        try:
-            main()
-        except Exception as e:
-            pass
+main()
