@@ -13,6 +13,7 @@ LINK_URL_NHENTAI = "https://nhentai.net/g/"
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
 PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource'
+# PARSED_SUBREDDIT = 'loli_tag_bot'
 
 messagesRepliedTo = []
 
@@ -374,23 +375,36 @@ def scanForURL(comment):
     nhentaiNumbers = []
     tsuminoNumbers = []
 
-    nhentaiNumbers = re.findall(r'(?<=https?:\/\/(www.)?nhentai.net\/g\/)\d+', comment)
+    nhentaiLinks = re.findall(r'https?:\/\/(?:www.)?nhentai.net\/g\/\d{1,6}', comment)
+    print(nhentaiLinks)
+    try:
+        nhentaiNumbers = [re.search(r'\d+', link).group(0) for link in nhentaiLinks]
+    except AttributeError:
+        print("No nHentai links")
     try:
         nhentaiNumbers = [int(number) for number in nhentaiNumbers]
     except ValueError:
         nhentaiNumbers = []
+    print("Pre deduplication N")
     nhentaiNumbers = removeDuplicates(nhentaiNumbers)
-
+    print("Post deduplication N")
+    print("Lowercase comments")
     commentLower = comment.lower()
-    tsuminoNumbers = re.findall(r'(?<=https?:\/\/(www.)?tsumino.com\/book\/info\/)\d+', commentLower)
-    if not tsuminoNumbers:
-        tsuminoNumbers = re.findall(r'(?<=https?:\/\/(www.)?tsumino.com\/read\/view\/)\d+', commentLower)
+    print(commentLower)
+    tsuminoLinks = re.findall(r'https?:\/\/(?:www.)?tsumino.com\/book\/info\/\d{1,5}', commentLower)
+    print(tsuminoLinks)
+    tsuminoLinks += re.findall(r'https?:\/\/(?:www.)?tsumino.com\/read\/view\/\d{1,5}', commentLower)
+    print(tsuminoLinks)
     try:
-        tsuminoNumbers = [int(nhentaiNumbers) for number in tsuminoNumbers]
+        tsuminoNumbers = [re.search(r'\d+', link).group(0) for link in tsuminoLinks]
+    except AttributeError:
+        print("No Tsumino links")
+    try:
+        tsuminoNumbers = [int(number) for number in tsuminoNumbers]
     except ValueError:
         tsuminoNumbers = []
-    
     if nhentaiNumbers or tsuminoNumbers:
+        print("true return")
         return [nhentaiNumbers, tsuminoNumbers]
     return []
 
@@ -547,9 +561,11 @@ def processCommentReply(comment, reddit):
             #     numbers = []
 
 
-if __name__ == '__main__':
-    while True:
-        try:
-            main()
-        except Exception as e:
-            pass
+# if __name__ == '__main__':
+#     while True:
+#         try:
+#             main()
+#         except Exception as e:
+#             pass
+
+main()
