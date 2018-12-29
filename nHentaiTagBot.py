@@ -561,11 +561,11 @@ def processCommentReply(comment, reddit):
             #     numbers = []
 
 
-# if __name__ == '__main__':
-#     while True:
-#         try:
-#             main()
-#         except Exception as e:
-#             pass
+if __name__ == '__main__':
+    while True:
+        try:
+            main()
+        except Exception as e:
+            pass
 
-main()
+# main()
