@@ -19,7 +19,7 @@ messagesRepliedTo = []
 
 def addFooter():
     # Needs to use ASCII code to not break reddit formatting &#32; is space &#40; is ( and &#41; is )
-    return "---\n\n^&#40;nHentai&#41;,&#32;&#41;Tsumino&#40;&#32;|&#32;min&#32;5&#32;digits&#32;|&#32;[Q&A](https://www.reddit.com/user/nHentai-Tag-Bot/comments/9r2swv/how_to_use_the_bot/)&#32;|&#32;[Contact](https://www.reddit.com/message/compose/?to=thevexedgerman&subject=[nHentai-Bot])"
+    return "---\n\n^&#40;nHentai&#41;,&#32;&#41;Tsumino&#40;&#32;|&#32;min&#32;5&#32;digits&#32;|&#32;[Q&A](https://www.reddit.com/user/nHentai-Tag-Bot/comments/9r2swv/how_to_use_the_bot/)&#32;|&#32;[Contact](https://www.reddit.com/message/compose/?to=thevexedgerman&subject=[nHentai-Bot])&#32;|&#32;[Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)"
 
 
 def additionalTagsString(entries, initialText, isNhentai=True):
@@ -470,7 +470,7 @@ def processPMs(reddit):
     for message in reddit.inbox.unread(limit=None):
         usernameMention = message.subject == 'username mention'
         usernameInBody = message.subject == 'comment reply' and "u/{}".format(reddit.user.me()) in message.body.lower()
-        linkMessage = message.subject == "[Link]"
+        linkMessage = message.subject == "[Link]" or message.subject == "re: [Link]"
 
         # This PM doesn't meet the response criteria. Skip it.
         if not (usernameMention or usernameInBody):
