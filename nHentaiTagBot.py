@@ -315,7 +315,7 @@ def generateReplyStringTsumino(processedData, galleryNumber):
         if processedData[group]:
             replyString += additionalTagsString(processedData[group], "Group", False) + "\n\n"
         if processedData[collection]:
-            replyString += additionalTagsString(processedData[collection], "Collection", False + "\n\n")
+            replyString += additionalTagsString(processedData[collection], "Collection", False) + "\n\n"
         if processedData[artist]:
             replyString += additionalTagsString(processedData[artist], "Artist", False) + "\n\n"
         if processedData[parody]:
@@ -469,7 +469,7 @@ def processPMs(reddit):
     #Adapted from Roboragi
     for message in reddit.inbox.unread(limit=None):
         usernameMention = message.subject == 'username mention'
-        usernameInBody = message.subject == 'comment reply' and "u/{}".format(reddit.user.me()) in message.body.lower()
+        usernameInBody = message.subject == 'comment reply' and "u/nhentai-tag-bot" in message.body.lower()
         linkMessage = message.subject == "[Link]" or message.subject == "re: [Link]"
 
         # This PM doesn't meet the response criteria. Skip it.
