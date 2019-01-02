@@ -521,18 +521,21 @@ def scanForURL(comment):
         ehentaiNumbers = []
     ehentaiPageLinks = re.findall(r'https?:\/\/(?:www.)?e-hentai.org\/s\/\w*\/\d{1,8}-\d{1,4}', comment)
     ehentaiPageLinks += re.findall(r'https?:\/\/(?:www.)?exhentai.org\/s\/\w*\/\d{1,8}-\d{1,4}', comment)
-    for link in ehentaiPageLinks:
-        removeURL = re.search(r'(?<=\/s\/).+', link).group(0)
-        galleryID = re.search(r'(?<=\/)\d+(?=-)', removeURL).group(0)
-        pageToken = re.search(r'\w+', removeURL).group(0)
-        page = re.search(r'(?<=-)d+', removeURL).group(0)
+    try:
+        for link in ehentaiPageLinks:
+            removeURL = re.search(r'(?<=\/s\/).+', link).group(0)
+            galleryID = re.search(r'(?<=\/)\d+(?=-)', removeURL).group(0)
+            pageToken = re.search(r'\w+', removeURL).group(0)
+            page = re.search(r'(?<=-)\d+', removeURL).group(0)
 
-        resquestStringPage = '{"method": "gtoken","pagelist": [[' + galleryID +',"' + pageToken + '",' + page + ']]}'
-        ehentaiJSONpage = requests.post(API_URL_EHENTAI, json=json.loads(resquestStringPage)).json()
-        if 'tokenlist' in ehentaiJSONpage:
-            galleryToken = ehentaiJSONpage['tokenlist'][0]['token']
-            ehentaiNumbers.append([galleryID, galleryToken])
-    ehentaiNumbers = removeDuplicates(ehentaiNumbers)
+            resquestStringPage = '{"method": "gtoken","pagelist": [[' + galleryID +',"' + pageToken + '",' + page + ']]}'
+            ehentaiJSONpage = requests.post(API_URL_EHENTAI, json=json.loads(resquestStringPage)).json()
+            if 'tokenlist' in ehentaiJSONpage:
+                galleryToken = ehentaiJSONpage['tokenlist'][0]['token']
+                ehentaiNumbers.append([galleryID, galleryToken])
+    except AttributeError:
+        print("no ehentai page Links")
+    ehentaiNumbers = removeDupes2(ehentaiNumbers)
 
     if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers:
         print("true return")
@@ -637,6 +640,14 @@ def removeDuplicates(seq):
     seen = set()
     seen_add = seen.add
     return [x for x in seq if not (x in seen or seen_add(x))]
+
+# taken from https://stackoverflow.com/questions/6764909/python-how-to-remove-all-duplicate-items-from-a-list since the other one can't do nested lists
+def removeDupes2(X):
+    unique_X = []
+    for i, row in enumerate(X):
+        if row not in X[i + 1:]:
+            unique_X.append(row)
+    return unique_X
 
 
 def generateLinkString(numbersCombi):
