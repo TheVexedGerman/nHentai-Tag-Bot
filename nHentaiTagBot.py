@@ -204,21 +204,21 @@ def analyseNumberEhentai(galleryNumberAndToken):
         for tag in tags:
         # print(tag)
             if 'artist:' in tag:
-                artist.append(re.search(r'(?<=artist:)\w+', tag).group(0))
+                artist.append(re.search(r'(?<=artist:).+', tag).group(0))
             elif 'character:' in tag:
-                character.append(re.search(r'(?<=character:)\w+', tag).group(0))
+                character.append(re.search(r'(?<=character:).+', tag).group(0))
             elif 'female:' in tag:
-                female.append(re.search(r'(?<=female:)\w+', tag).group(0))
+                female.append(re.search(r'(?<=female:).+', tag).group(0))
             elif 'group:' in tag:
-                group.append(re.search(r'(?<=group:)\w+', tag).group(0))
+                group.append(re.search(r'(?<=group:).+', tag).group(0))
             elif 'language:' in tag:
-                language.append(re.search(r'(?<=language:)\w+', tag).group(0))
+                language.append(re.search(r'(?<=language:).+', tag).group(0))
             elif 'male:' in tag:
-                male.append(re.search(r'(?<=male:)\w+', tag).group(0))
+                male.append(re.search(r'(?<=male:).+', tag).group(0))
             elif 'parody:' in tag:
-                parody.append(re.search(r'(?<=parody:)\w+', tag).group(0))
+                parody.append(re.search(r'(?<=parody:).+', tag).group(0))
             else:
-                misc.append(re.search(r'\w+', tag).group(0))
+                misc.append(re.search(r'.+', tag).group(0))
     return [title, numberOfPages, category, rating, artist, character, female, group, language, male, parody, misc]
 
 
@@ -430,8 +430,6 @@ def generateReplyStringEhentai(processedData, galleryNumberAndToken):
     return replyString
 
 
-
-
 def getJSON(galleryNumber):
     if galleryNumber < 300000:
         galleryNumber = str(galleryNumber)
@@ -514,7 +512,7 @@ def scanForURL(comment):
             removeURL = re.search(r'(?<=\/g\/).+', link).group(0)
             galleryID = int(re.search(r'\d+(?=\/)', removeURL).group(0))
             galleryToken = re.search(r'(?<=\/)\w+', removeURL).group(0)
-            ehentaiNumbers.append({galleryID,galleryToken})
+            ehentaiNumbers.append([galleryID,galleryToken])
     except AttributeError:
         print("no ehentaiLinks")
     except ValueError:
