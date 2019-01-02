@@ -15,8 +15,8 @@ LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
-# PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource'
-PARSED_SUBREDDIT = 'loli_tag_bot'
+PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource'
+# PARSED_SUBREDDIT = 'loli_tag_bot'
 
 nhentai = 0
 tsumino = 1
@@ -230,8 +230,8 @@ def analyseNumberEhentai(galleryNumberAndToken):
 def authenticate():
     print("Authenticating...")
     reddit = praw.Reddit(
-        # 'nhentaibot'
-        'thevexedgermanbot'
+        'nhentaibot'
+        # 'thevexedgermanbot'
     )
     print("Authenticated as {}".format(reddit.user.me()))
     return reddit
@@ -414,7 +414,9 @@ def generateReplyStringEhentai(processedData, galleryNumberAndToken):
         replyString += "**Number of pages**: " + str(processedData[numberOfPages]) + "\n\n"
         if processedData[rating]:
             replyString += "**Rating**: " + str(processedData[rating]) + "\n\n"
-        
+        if processedData[category]:
+            replyString += "**Category**: " + processedData[category] + "\n\n"
+
         if processedData[language]:
             replyString += additionalTagsString(processedData[language], "Language", False) + "\n\n"
         if processedData[parody]:
@@ -566,7 +568,6 @@ def getEhentaiNumbers(comment):
             numbers.append([galleryID, galleryToken])
     except AttributeError:
         print("Number Recognition failed Ehentai")
-    print(numbers)
     return numbers
 
 
@@ -737,11 +738,11 @@ def processCommentReply(comment, reddit):
             #     numbers = []
 
 
-# if __name__ == '__main__':
-#     while True:
-#         try:
-#             main()
-#         except Exception as e:
-#             pass
+if __name__ == '__main__':
+    while True:
+        try:
+            main()
+        except Exception as e:
+            pass
 
-main()
+# main()
