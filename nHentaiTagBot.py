@@ -11,17 +11,22 @@ API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
 API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/'
 API_URL_EHENTAI = "https://api.e-hentai.org/api.php"
 LINK_URL_NHENTAI = "https://nhentai.net/g/"
+LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
 PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource'
 # PARSED_SUBREDDIT = 'loli_tag_bot'
 
+nhentai = 0
+tsumino = 1
+ehentai = 2
+
 messagesRepliedTo = []
 
 def addFooter():
     # Needs to use ASCII code to not break reddit formatting &#32; is space &#40; is ( and &#41; is )
-    return "---\n\n^&#40;nHentai&#41;,&#32;&#41;Tsumino&#40;&#32;|&#32;min&#32;5&#32;digits&#32;|&#32;[Q&A](https://www.reddit.com/user/nHentai-Tag-Bot/comments/9r2swv/how_to_use_the_bot/)&#32;|&#32;[Contact](https://www.reddit.com/message/compose/?to=thevexedgerman&subject=[nHentai-Bot])&#32;|&#32;[Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)"
+    return "---\n\n^&#40;nHentai&#41;,&#32;&#41;Tsumino&#40;,&#32;}e-hentai/token{&#32;|&#32;min&#32;5&#32;digits&#32;|&#32;[Q&A](https://www.reddit.com/user/nHentai-Tag-Bot/comments/9r2swv/how_to_use_the_bot/)&#32;|&#32;[Contact](https://www.reddit.com/message/compose/?to=thevexedgerman&subject=[nHentai-Bot])&#32;|&#32;[Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)"
 
 
 def additionalTagsString(entries, initialText, isNhentai=True):
@@ -553,7 +558,7 @@ def getTsuminoNumbers(comment):
 
 def getEhentaiNumbers(comment):
     numbers = []
-    candidates = re.findall(r'(?<=\>)\d{1,8}\/\w*(?=\<)', comment)
+    candidates = re.findall(r'(?<=\})\d{1,8}\/\w*(?=\{)', comment)
     try:
         for entry in candidates:
             galleryID = int(re.search(r'\d+(?=\/)', entry).group(0))
@@ -663,36 +668,40 @@ def removeDupes2(X):
 
 def generateLinkString(numbersCombi):
     #generate the string that will be replied
-    nhentai = 0
-    tsumino = 1
     linkString = ""
     if numbersCombi:
         if numbersCombi[nhentai]:
             numbers = numbersCombi[nhentai]
             for number in numbers:
-                linkString += generateLinks(number) + "\n\n"
+                linkString += generateLinks(number, nhentai) + "\n\n"
         if numbersCombi[tsumino]:
             numbers = numbersCombi[tsumino]
             for number in numbers:
-                linkString += generateLinks(number, False) + "\n\n"
+                linkString += generateLinks(number, tsumino) + "\n\n"
+        if numbersCombi[ehentai]:
+            numbers = numbersCombi[ehentai]
+            for number in numbers:
+                linkString += generateLinks(number, ehentai) + "\n\n"
     return linkString
 
 
-def generateLinks(number, isNhentai=True):
+def generateLinks(number, key):
     # make the link
     linkString = ""
-    if isNhentai:
+    if key == nhentai:
         linkString = LINK_URL_NHENTAI + str(number)
-    else:
+    elif key == tsumino:
         # Since Tsumino is just being HTML parsed the API URL is fine
         linkString = API_URL_TSUMINO + str(number)
+    elif key == ehentai:
+        linkString = LINK_URL_EHENTAI + str(number[0]) + "/" + number[1]
     return linkString
 
 
 def scanPM(message):
     linkString = ""
     numbersCombi = getNumbers(message)
-    numberOfInts = len(numbersCombi[0])+len(numbersCombi[1])
+    numberOfInts = len(numbersCombi[0])+len(numbersCombi[1]+len(numbersCombi[2]))
     if (numberOfInts) > 0:
         if numberOfInts == 1:
             linkString += "Here is your link:\n\n"
