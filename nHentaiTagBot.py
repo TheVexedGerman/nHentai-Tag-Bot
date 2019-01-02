@@ -458,8 +458,7 @@ def getNumbers(comment):
     if not numbersCombi:
         nhentaiNumbers = getNhentaiNumber(comment.body)
         tsuminoNumbers = getTsuminoNumbers(comment.body)
-        #TODO regular, parentheses based search
-        ehentaiNumbers = []
+        ehentaiNumbers = getEhentaiNumbers(comment.body)
         numbersCombi = [nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]
     return numbersCombi
 
@@ -550,6 +549,18 @@ def getTsuminoNumbers(comment):
     except ValueError:
         numbers = []
     numbers = removeDuplicates(numbers)
+    return numbers
+
+def getEhentaiNumbers(comment):
+    numbers = []
+    candidates = re.findall(r'(?<=\>)\d{1,8}\/\w*(?=\<)', comment)
+    try:
+        for entry in candidates:
+            galleryID = int(re.search(r'\d+(?=\/)', entry).group(0))
+            galleryToken = re.search(r'(?<=\/)\w+', entry).group(0)
+            numbers.append([galleryID, galleryToken])
+    except AttributeError:
+        print("Number Recognition failed Ehentai")
     return numbers
 
 
