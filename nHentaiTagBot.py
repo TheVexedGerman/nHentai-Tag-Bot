@@ -505,8 +505,10 @@ def scanForURL(comment):
         tsuminoNumbers = [int(number) for number in tsuminoNumbers]
     except ValueError:
         tsuminoNumbers = []
+    tsuminoNumbers = removeDuplicates(tsuminoNumbers)
 
     ehentaiLinks = re.findall(r'https?:\/\/(?:www.)?e-hentai.org\/g\/\d{1,8}\/\w*', comment)
+    ehentaiLinks = re.findall(r'https?:\/\/(?:www.)?exhentai.org\/g\/\d{1,8}\/\w*', comment)
     try:
         for link in ehentaiLinks:
             removeURL = re.search(r'(?<=\/g\/).+', link).group(0)
@@ -518,6 +520,7 @@ def scanForURL(comment):
     except ValueError:
         ehentaiNumbers = []
     ehentaiPageLinks = re.findall(r'https?:\/\/(?:www.)?e-hentai.org\/s\/\w*\/\d{1,8}-\d{1,4}', comment)
+    ehentaiPageLinks += re.findall(r'https?:\/\/(?:www.)?exhentai.org\/s\/\w*\/\d{1,8}-\d{1,4}', comment)
     for link in ehentaiPageLinks:
         removeURL = re.search(r'(?<=\/s\/).+', link).group(0)
         galleryID = re.search(r'(?<=\/)\d+(?=-)', removeURL).group(0)
@@ -529,6 +532,7 @@ def scanForURL(comment):
         if 'tokenlist' in ehentaiJSONpage:
             galleryToken = ehentaiJSONpage['tokenlist'][0]['token']
             ehentaiNumbers.append([galleryID, galleryToken])
+    ehentaiNumbers = removeDuplicates(ehentaiNumbers)
 
     if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers:
         print("true return")
