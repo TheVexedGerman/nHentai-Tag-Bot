@@ -517,6 +517,18 @@ def scanForURL(comment):
         print("no ehentaiLinks")
     except ValueError:
         ehentaiNumbers = []
+    ehentaiPageLinks = re.findall(r'https?:\/\/(?:www.)?e-hentai.org\/s\/\w*\/\d{1,8}-\d{1,4}', comment)
+    for link in ehentaiPageLinks:
+        removeURL = re.search(r'(?<=\/s\/).+', link).group(0)
+        galleryID = re.search(r'(?<=\/)\d+(?=-)', removeURL).group(0)
+        pageToken = re.search(r'\w+', removeURL).group(0)
+        page = re.search(r'(?<=-)d+', removeURL).group(0)
+
+        resquestStringPage = '{"method": "gtoken","pagelist": [[' + galleryID +',"' + pageToken + '",' + page + ']]}'
+        ehentaiJSONpage = requests.post(API_URL_EHENTAI, json=json.loads(resquestStringPage)).json()
+        if 'tokenlist' in ehentaiJSONpage:
+            galleryToken = ehentaiJSONpage['tokenlist'][0]['token']
+            ehentaiNumbers.append([galleryID, galleryToken])
 
     if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers:
         print("true return")
