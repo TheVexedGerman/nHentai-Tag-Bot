@@ -15,7 +15,7 @@ LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
-PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource'
+PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource+CroppedHentaiMemes'
 # PARSED_SUBREDDIT = 'loli_tag_bot'
 
 nhentai = 0
@@ -408,7 +408,7 @@ def generateReplyStringEhentai(processedData, galleryNumberAndToken):
     replyString = ""
 
     if processedData:
-        replyString += "E-Hentai: " + str(galleryNumberAndToken[0]) + "/" + str(galleryNumberAndToken[1]) + "\n\n"
+        replyString += ">E-Hentai: " + str(galleryNumberAndToken[0]) + "/" + str(galleryNumberAndToken[1]) + "\n\n"
         if processedData[title]:
             replyString += "**Title**: " + processedData[title] + "\n\n"
         replyString += "**Number of pages**: " + str(processedData[numberOfPages]) + "\n\n"
@@ -560,7 +560,7 @@ def getTsuminoNumbers(comment):
 
 def getEhentaiNumbers(comment):
     numbers = []
-    candidates = re.findall(r'(?<=\})\d{1,8}\/\w*(?=\{)', comment)
+    candidates = re.findall(r'(?<=\})\d{1,8}\/\w*?(?=\{)', comment)
     try:
         for entry in candidates:
             galleryID = int(re.search(r'\d+(?=\/)', entry).group(0))
@@ -714,28 +714,60 @@ def scanPM(message):
     message.mark_read()
 
 #TODO Generate PM based on key word reply
-def processCommentReply(comment, reddit):
+def processCommentReply(comment):
     tsuminoNumbers = []
+    ehentaiNumbers = []
     nhentaiNumbers = []
+    replyString = ""
+    linkString = ""
     try:
-        foundParent = re.findall(r'(?<=t1_).*', comment.parent_id)
+        foundParent = re.search(r'(?<=t1_).*', comment.parent_id)
     except:
         print('failure')
     if foundParent:
-        parentComment = reddit.comment(foundParent[0])
+        parentComment = reddit.comment(foundParent.group(0))
         if parentComment.author.name == reddit.user.me():
             parentComment = foundParent
+
             tsuminoNumbers = re.findall(r'(?<=>Tsumino: )\d{5,6}', parentComment)
-            # try:
-            #     tsuminoNumbers = [int(number) for number in tsuminoNumbers]
-            # except ValueError:
-            #     numbers = []
+            try:
+                tsuminoNumbers = [int(number) for number in tsuminoNumbers]
+            except ValueError:
+                numbers = []
             parentComment = re.sub(r'(?<=>Tsumino: )\d{5,6}', '', parentComment)
+
+            ehentaiNumbersCandidates = re.search(r'(?<=>E-Hentai: )\d{1,8}\/\w*?', parentComment)
+            try:
+                for entry in ehentaiNumbersCandidates:
+                    galleryID = int(re.search(r'\d+(?=\/)', entry).group(0))
+                    galleryToken = re.search(r'(?<=\/)\w+', entry).group(0)
+                    ehentaiNumbers.append([galleryID, galleryToken])
+            except AttributeError:
+                print("Number Recognition failed Ehentai")
+
+            parentComment = re.sub(r'(?<=>E-Hentai: )\d{1,8}\/\w*?', '', parentComment)
+
             nhentaiNumbers = re.findall(r'\d{5,6}', parentComment)
-            # try:
-            #     nhnumbers = [int(number) for number in numbers]
-            # except ValueError:
-            #     numbers = []
+            try:
+                nhentaiNumbers = [int(number) for number in numbers]
+            except ValueError:
+                numbers = []
+    if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers:
+        numberOfInts = len(nhentaiNumbers)+len(tsuminoNumbers)+len(ehentaiNumbers)
+        if numberOfInts > 0:
+            if numberOfInts == 1:
+                linkString += "Here is your link:\n\n"
+            else:
+                linkString += "Here are your links:\n\n"
+        linkString += generateLinkString([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers])
+        replyString += "You have been PM'd the links to the numbers above.\n\n"
+        replyString += "If you also want to receive the link [click here]("+ +")\n\n"
+
+
+def generateReplyLink(numbersCombi):
+    # https://reddit.com/message/compose/?to=nHentai-Tag-Bot&subject=[Link]&message=(123456)+)12345(
+    replyString = "https://reddit.com/message/compose/?to=nHentai-Tag-Bot&subject=[Link]&message="
+    
 
 
 if __name__ == '__main__':
