@@ -15,7 +15,7 @@ LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
-PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource'
+PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource+CroppedHentaiMemes'
 # PARSED_SUBREDDIT = 'loli_tag_bot'
 
 nhentai = 0
@@ -408,7 +408,7 @@ def generateReplyStringEhentai(processedData, galleryNumberAndToken):
     replyString = ""
 
     if processedData:
-        replyString += "E-Hentai: " + str(galleryNumberAndToken[0]) + "/" + str(galleryNumberAndToken[1]) + "\n\n"
+        replyString += ">E-Hentai: " + str(galleryNumberAndToken[0]) + "/" + str(galleryNumberAndToken[1]) + "\n\n"
         if processedData[title]:
             replyString += "**Title**: " + processedData[title] + "\n\n"
         replyString += "**Number of pages**: " + str(processedData[numberOfPages]) + "\n\n"
@@ -560,7 +560,7 @@ def getTsuminoNumbers(comment):
 
 def getEhentaiNumbers(comment):
     numbers = []
-    candidates = re.findall(r'(?<=\})\d{1,8}\/\w*(?=\{)', comment)
+    candidates = re.findall(r'(?<=\})\d{1,8}\/\w*?(?=\{)', comment)
     try:
         for entry in candidates:
             galleryID = int(re.search(r'\d+(?=\/)', entry).group(0))
@@ -584,7 +584,7 @@ def getSavedMessages():
 
 
 def processComment(comment):
-    if comment.id not in messagesRepliedTo:
+    if comment.id not in messagesRepliedTo and comment.author.name != reddit.user.me():
         replyString = ""
         nhentai = 0
         tsumino = 1
@@ -636,11 +636,16 @@ def processPMs(reddit):
         usernameMention = message.subject == 'username mention'
         usernameInBody = message.subject == 'comment reply' and "u/nhentai-tag-bot" in message.body.lower()
         linkMessage = message.subject == "[Link]" or message.subject == "re: [Link]"
+        linkRequestInComment = message.subject == 'comment reply' and "!links" in message.body.lower()
 
         # This PM doesn't meet the response criteria. Skip it.
         if not (usernameMention or usernameInBody):
             if linkMessage:
                 scanPM(message)
+            if linkRequestInComment:
+                linkComment = reddit.comment(message.id)
+                processCommentReply(linkComment)
+                message.mark_read()
             continue
 
         try:
@@ -713,29 +718,107 @@ def scanPM(message):
     message.reply(linkString)
     message.mark_read()
 
-#TODO Generate PM based on key word reply
-def processCommentReply(comment, reddit):
+
+def processCommentReply(comment):
     tsuminoNumbers = []
+    ehentaiNumbers = []
     nhentaiNumbers = []
+    replyString = ""
+    linkString = ""
     try:
-        foundParent = re.findall(r'(?<=t1_).*', comment.parent_id)
+        foundParent = re.search(r'(?<=t1_).*', comment.parent_id)
     except:
         print('failure')
     if foundParent:
-        parentComment = reddit.comment(foundParent[0])
+        parentComment = reddit.comment(foundParent.group(0))
         if parentComment.author.name == reddit.user.me():
-            parentComment = foundParent
+            parentComment = parentComment.body
+
+            print(parentComment)
+
             tsuminoNumbers = re.findall(r'(?<=>Tsumino: )\d{5,6}', parentComment)
-            # try:
-            #     tsuminoNumbers = [int(number) for number in tsuminoNumbers]
-            # except ValueError:
-            #     numbers = []
+            try:
+                tsuminoNumbers = [int(number) for number in tsuminoNumbers]
+            except ValueError:
+                tsuminoNumbers = []
             parentComment = re.sub(r'(?<=>Tsumino: )\d{5,6}', '', parentComment)
+            print(tsuminoNumbers)
+            print(parentComment)
+
+
+            ehentaiNumbersCandidates = re.findall(r'(?<=>E-Hentai: )\d{1,8}\/\w*', parentComment)
+            print(ehentaiNumbersCandidates)
+            try:
+                for entry in ehentaiNumbersCandidates:
+                    galleryID = int(re.search(r'\d+(?=\/)', entry).group(0))
+                    galleryToken = re.search(r'(?<=\/)\w+', entry).group(0)
+                    ehentaiNumbers.append([galleryID, galleryToken])
+            except AttributeError:
+                print("Number Recognition failed Ehentai")
+
+            parentComment = re.sub(r'(?<=>E-Hentai: )\d{1,8}\/\w*', '', parentComment)
+            print(ehentaiNumbers)
+            print(parentComment)
+
+
             nhentaiNumbers = re.findall(r'\d{5,6}', parentComment)
-            # try:
-            #     nhnumbers = [int(number) for number in numbers]
-            # except ValueError:
-            #     numbers = []
+            try:
+                nhentaiNumbers = [int(number) for number in nhentaiNumbers]
+            except ValueError:
+                nhentaiNumbers = []
+    if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers:
+        numberOfInts = len(nhentaiNumbers)+len(tsuminoNumbers)+len(ehentaiNumbers)
+        if numberOfInts > 0:
+            if numberOfInts == 1:
+                linkString += "Here is your link:\n\n"
+            else:
+                linkString += "Here are your links:\n\n"
+        linkString += generateLinkString([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers])
+        replyString += "You have been PM'd the links to the numbers above.\n\n"
+        replyString += "If you also want to receive the link [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]) +")\n\n"
+        print(linkString)
+        print(replyString)
+    if linkString and replyString:
+        print(comment.author)
+        reddit.redditor(comment.author.name).message('[Link]', linkString)
+        comment.reply(replyString)
+        return True
+    return False
+
+
+def generateReplyLink(numbersCombi):
+    #  %28 is ( and %29 is )
+    # https://reddit.com/message/compose/?to=nHentai-Tag-Bot&subject=[Link]&message=(123456)+)12345(
+    replyString = "https://reddit.com/message/compose/?to=nHentai-Tag-Bot&subject=[Link]&message="
+    if numbersCombi[nhentai]:
+        i = 0
+        numbers = numbersCombi[nhentai]
+        length = len(numbers) - 1
+        for number in numbers:
+            replyString += '%28' + str(number) + '%29'
+            if length != i:
+                replyString += '+'
+            i += 1
+    if numbersCombi[tsumino]:
+        i = 0
+        numbers = numbersCombi[tsumino]
+        length = len(numbers) - 1
+        for number in numbers:
+            replyString += '%29' + str(number) + '%28'
+            if length != i:
+                replyString += '+'
+            i += 1
+    if numbersCombi[ehentai]:
+        i = 0
+        numbers = numbersCombi[ehentai]
+        length = len(numbers) - 1
+        for number in numbers:
+            replyString += '}' + str(number[0]) + '/' + str(number[1]) + '{'
+            if length != i:
+                replyString += '+'
+            i += 1
+    return replyString
+    
 
 
 if __name__ == '__main__':
