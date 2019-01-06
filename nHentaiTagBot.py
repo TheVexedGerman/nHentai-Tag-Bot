@@ -708,7 +708,7 @@ def generateLinks(number, key):
 def scanPM(message):
     linkString = ""
     numbersCombi = getNumbers(message)
-    numberOfInts = len(numbersCombi[0])+len(numbersCombi[1]+len(numbersCombi[2]))
+    numberOfInts = len(numbersCombi[0])+len(numbersCombi[1])+len(numbersCombi[2])
     if (numberOfInts) > 0:
         if numberOfInts == 1:
             linkString += "Here is your link:\n\n"
