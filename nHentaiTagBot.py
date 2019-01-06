@@ -636,11 +636,15 @@ def processPMs(reddit):
         usernameMention = message.subject == 'username mention'
         usernameInBody = message.subject == 'comment reply' and "u/nhentai-tag-bot" in message.body.lower()
         linkMessage = message.subject == "[Link]" or message.subject == "re: [Link]"
+        linkRequestInComment = message.subject == 'comment reply' and "!links" in message.body.lower()
 
         # This PM doesn't meet the response criteria. Skip it.
         if not (usernameMention or usernameInBody):
             if linkMessage:
                 scanPM(message)
+            if linkRequestInComment:
+                linkComment = reddit.comment(message.id)
+                processCommentReply(linkComment)
             continue
 
         try:
@@ -713,7 +717,6 @@ def scanPM(message):
     message.reply(linkString)
     message.mark_read()
 
-#TODO Generate PM based on key word reply
 def processCommentReply(comment):
     tsuminoNumbers = []
     ehentaiNumbers = []
@@ -761,12 +764,44 @@ def processCommentReply(comment):
                 linkString += "Here are your links:\n\n"
         linkString += generateLinkString([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers])
         replyString += "You have been PM'd the links to the numbers above.\n\n"
-        replyString += "If you also want to receive the link [click here]("+ +")\n\n"
+        replyString += "If you also want to receive the link [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]) +")\n\n"
+    if linkString and replyString:
+        reddit.redditor(comment.author).message('[Link]', linkString)
+        comment.reply(replyString)
+        return True
+    return False
 
 
 def generateReplyLink(numbersCombi):
     # https://reddit.com/message/compose/?to=nHentai-Tag-Bot&subject=[Link]&message=(123456)+)12345(
     replyString = "https://reddit.com/message/compose/?to=nHentai-Tag-Bot&subject=[Link]&message="
+    if numbersCombi[nhentai]:
+        i = 0
+        numbers = numbersCombi[nhentai]
+        length = len(numbers)
+        for number in numbers:
+            replyString += '(' + str(number) + ')'
+            if length != i:
+                replyString += '+'
+            i += 1
+    if numbersCombi[tsumino]:
+        i = 0
+        numbers = numbersCombi[tsumino]
+        length = len(numbers)
+        for number in numbers:
+            replyString += ')' + str(number) + '('
+            if length != i:
+                replyString += '+'
+            i += 1
+    if numbersCombi[ehentai]:
+        i = 0
+        numbers = numbersCombi[ehentai]
+        length = len(numbers)
+        for number in numbers:
+            replyString += '}' + number[0] + '/' + str(number[1]) + '{'
+            if length != i:
+                replyString += '+'
+            i += 1
     
 
 
