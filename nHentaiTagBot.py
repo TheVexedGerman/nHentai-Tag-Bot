@@ -60,8 +60,8 @@ def analyseNumberNhentai(galleryNumber):
     characters = []
     groups = []
     rawData = getJSON(galleryNumber)
-    if rawData[0] == 404:
-        return rawData
+    # if rawData[0] == 404:
+    #     return rawData
     if rawData:
         # print(rawData)
         title = rawData['title']['pretty']
@@ -307,7 +307,7 @@ def generateReplyStringNhentai(processedData, galleryNumber):
     replyString = ""
     if processedData[0] == 404:
         replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
-        replyString += "I'm sorry, the nHentai API returned a 404 error, therefore I'm unable to process your request at this time.\n\n"
+        replyString += "I'm sorry, [the nHentai API has been shut down](https://twitter.com/fuckmaou/status/1084550608097603585), I am unable to process your request at this time.\n\n A fix is being worked on, please be patient."
         return replyString
     if processedData[title]:
         if galleryNumber >= 10000:
@@ -447,10 +447,11 @@ def generateReplyStringEhentai(processedData, galleryNumberAndToken):
 def getJSON(galleryNumber):
     if galleryNumber < 300000:
         galleryNumber = str(galleryNumber)
-        request = requests.get(API_URL_NHENTAI+galleryNumber) # ['tags'] #
+        request = requests.get(LINK_URL_NHENTAI+galleryNumber) # ['tags'] #
         if request.status_code == 404:
             return [404]
-        nhentaiTags = request.json()
+        nhentaiTags = json.loads(re.search(r'(?<=N.gallery\().*(?=\))', request.text).group(0))
+        # nhentaiTags = request.json()
         if "error" in nhentaiTags:
             return []
         else:
