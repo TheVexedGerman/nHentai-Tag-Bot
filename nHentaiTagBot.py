@@ -60,6 +60,8 @@ def analyseNumberNhentai(galleryNumber):
     characters = []
     groups = []
     rawData = getJSON(galleryNumber)
+    if rawData[0] == 404:
+        return rawData
     if rawData:
         # print(rawData)
         title = rawData['title']['pretty']
@@ -279,6 +281,8 @@ def main():
     reddit = authenticate()
     global messagesRepliedTo
     messagesRepliedTo = getSavedMessages()
+    global postsLinked
+    postsLinked = getSavedLinkedMessages()
     while True:
         runBot(reddit)
 
@@ -301,7 +305,10 @@ def generateReplyStringNhentai(processedData, galleryNumber):
     characters = 7
     groups = 8
     replyString = ""
-
+    if processedData[0] == 404:
+        replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
+        replyString += "I'm sorry, the nHentai API returned a 404 error, therefore I'm unable to process your request at this time.\n\n"
+        return replyString
     if processedData[title]:
         if galleryNumber >= 10000:
             replyString += ">" + str(galleryNumber) + "\n\n"
@@ -440,7 +447,10 @@ def generateReplyStringEhentai(processedData, galleryNumberAndToken):
 def getJSON(galleryNumber):
     if galleryNumber < 300000:
         galleryNumber = str(galleryNumber)
-        nhentaiTags = requests.get(API_URL_NHENTAI+galleryNumber).json() # ['tags'] #
+        request = requests.get(API_URL_NHENTAI+galleryNumber) # ['tags'] #
+        if request.status_code == 404:
+            return [404]
+        nhentaiTags = request.json()
         if "error" in nhentaiTags:
             return []
         else:
@@ -581,6 +591,18 @@ def getSavedMessages():
             messagesRepliedTo = f.read().splitlines()
 
     return messagesRepliedTo
+
+
+def getSavedLinkedMessages():
+    # return an empty list if empty
+    if not os.path.isfile("linksRepliedTo.txt"):
+        linksRepliedTo = []
+    else:
+        with open("linksRepliedTo.txt", "r") as f:
+            # updated read file method from https://stackoverflow.com/questions/3925614/how-do-you-read-a-file-into-a-list-in-python
+            linksRepliedTo = f.read().splitlines()
+
+    return linksRepliedTo
 
 
 def processComment(comment):
@@ -731,7 +753,10 @@ def processCommentReply(comment):
         print('failure')
     if foundParent:
         parentComment = reddit.comment(foundParent.group(0))
-        if parentComment.author.name == reddit.user.me():
+        if parentComment.author.name == reddit.user.me() and parentComment.id not in postsLinked:
+            if re.search(r'\[click here\]', parentComment.body):
+                return False
+            parent = parentComment
             parentComment = parentComment.body
 
             print(parentComment)
@@ -780,8 +805,12 @@ def processCommentReply(comment):
         print(replyString)
     if linkString and replyString:
         print(comment.author)
+        postsLinked.append(parent.id)
+        with open("linksRepliedTo.txt", "a") as f:
+            f.write(parent.id + "\n")
         reddit.redditor(comment.author.name).message('[Link]', linkString)
         comment.reply(replyString)
+        
         return True
     return False
 
@@ -796,7 +825,7 @@ def generateReplyLink(numbersCombi):
         length = len(numbers) - 1
         for number in numbers:
             replyString += '%28' + str(number) + '%29'
-            if length != i:
+            if length != i or numbersCombi[tsumino] or numbersCombi[ehentai]:
                 replyString += '+'
             i += 1
     if numbersCombi[tsumino]:
@@ -805,7 +834,7 @@ def generateReplyLink(numbersCombi):
         length = len(numbers) - 1
         for number in numbers:
             replyString += '%29' + str(number) + '%28'
-            if length != i:
+            if length != i or numbersCombi[ehentai]:
                 replyString += '+'
             i += 1
     if numbersCombi[ehentai]:
@@ -818,7 +847,6 @@ def generateReplyLink(numbersCombi):
                 replyString += '+'
             i += 1
     return replyString
-    
 
 
 if __name__ == '__main__':
