@@ -659,7 +659,7 @@ def processPMs(reddit):
         usernameMention = message.subject == 'username mention'
         usernameInBody = message.subject == 'comment reply' and "u/nhentai-tag-bot" in message.body.lower()
         linkMessage = message.subject == "[Link]" or message.subject == "re: [Link]"
-        linkRequestInComment = message.subject == 'comment reply' and "!links" in message.body.lower()
+        linkRequestInComment = message.subject == 'comment reply' and "!link" in message.body.lower()
 
         # This PM doesn't meet the response criteria. Skip it.
         if not (usernameMention or usernameInBody):
@@ -802,6 +802,9 @@ def processCommentReply(comment):
         linkString += generateLinkString([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers])
         replyString += "You have been PM'd the links to the numbers above.\n\n"
         replyString += "If you also want to receive the link [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]) +")\n\n"
+        replyString += "---\n\n"
+        replyString += "^(Please be aware that this action will only be performed for the first !links reply to each comment.)\n\n"
+        replyString += "^(Subsequent requests have to use the message link)"
         print(linkString)
         print(replyString)
     if linkString and replyString:
@@ -825,7 +828,7 @@ def generateReplyLink(numbersCombi):
         numbers = numbersCombi[nhentai]
         length = len(numbers) - 1
         for number in numbers:
-            replyString += '%28' + str(number) + '%29'
+            replyString += '%28' + str(number).zfill(5) + '%29'
             if length != i or numbersCombi[tsumino] or numbersCombi[ehentai]:
                 replyString += '+'
             i += 1
@@ -834,7 +837,7 @@ def generateReplyLink(numbersCombi):
         numbers = numbersCombi[tsumino]
         length = len(numbers) - 1
         for number in numbers:
-            replyString += '%29' + str(number) + '%28'
+            replyString += '%29' + str(number).zfill(5) + '%28'
             if length != i or numbersCombi[ehentai]:
                 replyString += '+'
             i += 1
