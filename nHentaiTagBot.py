@@ -15,7 +15,7 @@ LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
-PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource+CroppedHentaiMemes+hentaimemes'
+PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource+CroppedHentaiMemes'
 # PARSED_SUBREDDIT = 'loli_tag_bot'
 
 nhentai = 0
