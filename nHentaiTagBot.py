@@ -59,6 +59,7 @@ def analyseNumberNhentai(galleryNumber):
     parodies = []
     characters = []
     groups = []
+    isLoli = False
     rawData = getJSON(galleryNumber)
     if rawData == [404]:
         return rawData
@@ -81,8 +82,12 @@ def analyseNumberNhentai(galleryNumber):
                 characters.append([tags['name'], tags['count']])
             elif 'group' in tags['type']:
                 groups.append([tags['name'], tags['count']])
+        if listOfTags:
+            for entry in listOfTags:
+                if 'lolicon' in entry[0]:
+                    isLoli = True
 
-    processedData = [title, numberOfPages, listOfTags, languages, artists, categories, parodies, characters, groups]
+    processedData = [title, numberOfPages, listOfTags, languages, artists, categories, parodies, characters, groups, isLoli]
     # Sort the tags by descending popularity to imitate website behavior
     i = 0
     for tagList in processedData:
@@ -103,6 +108,7 @@ def analyseNumberTsumino(galleryNumber):
     parody = []
     tag = []
     collection = []
+    isLoli = False
 
     response = requests.get(API_URL_TSUMINO+str(galleryNumber))
     print(response)
@@ -178,7 +184,12 @@ def analyseNumberTsumino(galleryNumber):
         except:
             print("No Tags")
 
-        return [title, numberOfPages, rating, category, group, artist, parody, tag, collection]
+        if tag:
+            for entry in tag:
+                if 'Lolicon' in entry:
+                    isLoli = True
+
+        return [title, numberOfPages, rating, category, group, artist, parody, tag, collection, isLoli]
     else:
         return []
 
@@ -198,6 +209,7 @@ def analyseNumberEhentai(galleryNumberAndToken):
     male = []
     parody = []
     misc = []
+    isLoli = False
 
     requestString = '{"method": "gdata","gidlist": [['+ str(galleryID) + ',' + '"' + galleryToken +'"]],"namespace": 1}'
     ehentaiJSON = requests.post(API_URL_EHENTAI, json=json.loads(requestString)).json()
@@ -226,7 +238,9 @@ def analyseNumberEhentai(galleryNumberAndToken):
                 parody.append(re.search(r'(?<=parody:).+', tag).group(0))
             else:
                 misc.append(re.search(r'.+', tag).group(0))
-    return [title, numberOfPages, category, rating, artist, character, female, group, language, male, parody, misc]
+
+        #TODO actual loli check
+    return [title, numberOfPages, category, rating, artist, character, female, group, language, male, parody, misc, isLoli]
 
 
 def authenticate():
@@ -304,14 +318,15 @@ def generateReplyStringNhentai(processedData, galleryNumber):
     parodies = 6
     characters = 7
     groups = 8
+    isLoli = 9
     replyString = ""
     if processedData[0] == 404:
         replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
         replyString += "nHentai returned 404 for this number. The gallery has either been removed or doesn't exist yet.\n\n"
         return replyString
     if processedData[title]:
-        if galleryNumber >= 10000:
-            replyString += ">" + str(galleryNumber) + "\n\n"
+        if processedData[isLoli]:
+            replyString += ">[REDACTED]"
         else:
             replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
         replyString += "**Title**: " + processedData[title] + "\n\n"
@@ -359,11 +374,15 @@ def generateReplyStringTsumino(processedData, galleryNumber):
     parody = 6
     tag = 7
     collection = 8
+    isLoli = 9
     replyString = ""
     print("Tsumino replyStringGenerator Start")
 
     if processedData:
-        replyString += ">Tsumino: " + str(galleryNumber).zfill(5) + "\n\n"
+        if processedData[isLoli]:
+            replyString += ">Tsumino: [REDACTED]"
+        else:
+            replyString += ">Tsumino: " + str(galleryNumber).zfill(5) + "\n\n"
         if processedData[title]:
             replyString += "**Title**: " + processedData[title] + "\n\n"
         replyString += "**Number of pages**: " + str(processedData[pages]) + "\n\n"
@@ -412,9 +431,12 @@ def generateReplyStringEhentai(processedData, galleryNumberAndToken):
     male = 9
     parody = 10
     misc = 11
+    isLoli = 12
     replyString = ""
 
     if processedData:
+        if processedData[isLoli]:
+            replyString += ">E-Hentai: [REDACTED]"
         replyString += ">E-Hentai: " + str(galleryNumberAndToken[0]) + "/" + str(galleryNumberAndToken[1]) + "\n\n"
         if processedData[title]:
             replyString += "**Title**: " + processedData[title] + "\n\n"
@@ -498,6 +520,7 @@ def scanForURL(comment):
     nhentaiNumbers = []
     tsuminoNumbers = []
     ehentaiNumbers = []
+    redacted = []
 
     nhentaiLinks = re.findall(r'https?:\/\/(?:www.)?nhentai.net\/g\/\d{1,6}', comment)
     print(nhentaiLinks)
@@ -712,6 +735,10 @@ def generateLinkString(numbersCombi):
             numbers = numbersCombi[ehentai]
             for number in numbers:
                 linkString += generateLinks(number, ehentai) + "\n\n"
+        if numbersCombi[3]:
+            numbers = numbersCombi[3]
+            for number in numbers:
+                linkString += "This number has been redacted and therefore no link can be generated. \n\n"
     return linkString
 
 
@@ -746,6 +773,7 @@ def processCommentReply(comment):
     tsuminoNumbers = []
     ehentaiNumbers = []
     nhentaiNumbers = []
+    redacted = []
     replyString = ""
     linkString = ""
     try:
@@ -786,22 +814,28 @@ def processCommentReply(comment):
             print(ehentaiNumbers)
             print(parentComment)
 
-
             nhentaiNumbers = re.findall(r'\d{5,6}', parentComment)
             try:
                 nhentaiNumbers = [int(number) for number in nhentaiNumbers]
             except ValueError:
                 nhentaiNumbers = []
-    if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers:
+
+            redacted = re.findall(r'[REDACTED]', parentComment)
+            redacted = [True for entry in redacted]
+    if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or redacted:
         numberOfInts = len(nhentaiNumbers)+len(tsuminoNumbers)+len(ehentaiNumbers)
         if numberOfInts > 0:
             if numberOfInts == 1:
                 linkString += "Here is your link:\n\n"
             else:
                 linkString += "Here are your links:\n\n"
-        linkString += generateLinkString([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers])
-        replyString += "You have been PM'd the links to the numbers above.\n\n"
-        replyString += "If you also want to receive the link [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]) +")\n\n"
+        linkString += generateLinkString([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, redacted])
+        if not redacted:
+            replyString += "You have been PM'd the links to the numbers above.\n\n"
+        else:
+            replyString += "Redaction prevents link generation. If there are numbers beside the redacted ones a link has been PM'd to you."
+        if (redacted and (nhentaiNumbers or tsuminoNumbers or ehentaiNumbers)) or not redacted:
+            replyString += "If you also want to receive the link [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]) +")\n\n"
         replyString += "---\n\n"
         replyString += "^(Please be aware that this action will only be performed for the first !links reply to each comment.)\n\n"
         replyString += "^(Subsequent requests have to use the message link)"
@@ -850,6 +884,12 @@ def generateReplyLink(numbersCombi):
             if length != i:
                 replyString += '+'
             i += 1
+    # if numbersCombi[3]:
+    #     i = 0
+    #     numbers = numbersCombi[3]:
+    #     length = len(numbers) - 1
+    #     for number in numbers:
+    #         replyString += "This number has been removed for a reason. No link can be generated"
     return replyString
 
 
