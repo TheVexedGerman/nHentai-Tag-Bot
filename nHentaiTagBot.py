@@ -26,7 +26,7 @@ messagesRepliedTo = []
 
 def addFooter():
     # Needs to use ASCII code to not break reddit formatting &#32; is space &#40; is ( and &#41; is )
-    return "---\n\n^&#40;nHentai&#41;,&#32;&#41;Tsumino&#40;,&#32;}e-hentai/token{&#32;|&#32;min&#32;5&#32;digits&#32;|&#32;[Q&A](https://www.reddit.com/user/nHentai-Tag-Bot/comments/9r2swv/how_to_use_the_bot/)&#32;|&#32;[Contact](https://www.reddit.com/message/compose/?to=thevexedgerman&subject=[nHentai-Bot])&#32;|&#32;[Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)"
+    return "---\n\n^&#40;nHentai&#41;,&#32;&#41;Tsumino&#40;,&#32;}e-hentai/token{&#32;|&#32;min&#32;5&#32;digits&#32;|&#32;[Contact](https://www.reddit.com/message/compose/?to=thevexedgerman&subject=[nHentai-Bot])&#32;|&#32;[Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)"
 
 
 def additionalTagsString(entries, initialText, isNhentai=True):
@@ -91,7 +91,7 @@ def analyseNumberNhentai(galleryNumber):
     # Sort the tags by descending popularity to imitate website behavior
     i = 0
     for tagList in processedData:
-        if i > 1:
+        if i > 1 and i < 9:
             processedData[i] = sorted(tagList, key=lambda tags: tags[1], reverse=True)
         i += 1
     # print(processedData)
@@ -326,7 +326,7 @@ def generateReplyStringNhentai(processedData, galleryNumber):
         return replyString
     if processedData[title]:
         if processedData[isLoli]:
-            replyString += ">[REDACTED]"
+            replyString += ">[REDACTED]\n\n"
         else:
             replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
         replyString += "**Title**: " + processedData[title] + "\n\n"
@@ -380,7 +380,7 @@ def generateReplyStringTsumino(processedData, galleryNumber):
 
     if processedData:
         if processedData[isLoli]:
-            replyString += ">Tsumino: [REDACTED]"
+            replyString += ">Tsumino: [REDACTED]\n\n"
         else:
             replyString += ">Tsumino: " + str(galleryNumber).zfill(5) + "\n\n"
         if processedData[title]:
@@ -436,8 +436,9 @@ def generateReplyStringEhentai(processedData, galleryNumberAndToken):
 
     if processedData:
         if processedData[isLoli]:
-            replyString += ">E-Hentai: [REDACTED]"
-        replyString += ">E-Hentai: " + str(galleryNumberAndToken[0]) + "/" + str(galleryNumberAndToken[1]) + "\n\n"
+            replyString += ">E-Hentai: [REDACTED]\n\n"
+        else:
+            replyString += ">E-Hentai: " + str(galleryNumberAndToken[0]) + "/" + str(galleryNumberAndToken[1]) + "\n\n"
         if processedData[title]:
             replyString += "**Title**: " + processedData[title] + "\n\n"
         replyString += "**Number of pages**: " + str(processedData[numberOfPages]) + "\n\n"
@@ -520,7 +521,6 @@ def scanForURL(comment):
     nhentaiNumbers = []
     tsuminoNumbers = []
     ehentaiNumbers = []
-    redacted = []
 
     nhentaiLinks = re.findall(r'https?:\/\/(?:www.)?nhentai.net\/g\/\d{1,6}', comment)
     print(nhentaiLinks)
@@ -820,7 +820,7 @@ def processCommentReply(comment):
             except ValueError:
                 nhentaiNumbers = []
 
-            redacted = re.findall(r'[REDACTED]', parentComment)
+            redacted = re.findall(r'\[REDACTED\]', parentComment)
             redacted = [True for entry in redacted]
     if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or redacted:
         numberOfInts = len(nhentaiNumbers)+len(tsuminoNumbers)+len(ehentaiNumbers)
@@ -833,7 +833,7 @@ def processCommentReply(comment):
         if not redacted:
             replyString += "You have been PM'd the links to the numbers above.\n\n"
         else:
-            replyString += "Redaction prevents link generation. If there are numbers beside the redacted ones a link has been PM'd to you."
+            replyString += "Redaction prevents link generation. If there are numbers beside the redacted ones a link has been PM'd to you.\n\n"
         if (redacted and (nhentaiNumbers or tsuminoNumbers or ehentaiNumbers)) or not redacted:
             replyString += "If you also want to receive the link [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]) +")\n\n"
         replyString += "---\n\n"
