@@ -86,6 +86,8 @@ def analyseNumberNhentai(galleryNumber):
             for entry in listOfTags:
                 if 'lolicon' in entry[0]:
                     isLoli = True
+                elif 'shotacon' in entry[0]:
+                    isLoli = True
 
     processedData = [title, numberOfPages, listOfTags, languages, artists, categories, parodies, characters, groups, isLoli]
     # Sort the tags by descending popularity to imitate website behavior
@@ -188,6 +190,8 @@ def analyseNumberTsumino(galleryNumber):
             for entry in tag:
                 if 'Lolicon' in entry:
                     isLoli = True
+                elif 'Shotacon' in entry:
+                    isLoli = True
 
         return [title, numberOfPages, rating, category, group, artist, parody, tag, collection, isLoli]
     else:
@@ -238,6 +242,10 @@ def analyseNumberEhentai(galleryNumberAndToken):
                 parody.append(re.search(r'(?<=parody:).+', tag).group(0))
             else:
                 misc.append(re.search(r'.+', tag).group(0))
+            if "Lolicon" in female:
+                isLoli = True
+            elif "Shotacon" in male:
+                isLoli = True
 
         #TODO actual loli check
     return [title, numberOfPages, category, rating, artist, character, female, group, language, male, parody, misc, isLoli]
@@ -680,7 +688,7 @@ def processPMs(reddit):
     #Adapted from Roboragi
     for message in reddit.inbox.unread(limit=None):
         usernameMention = message.subject == 'username mention'
-        usernameInBody = message.subject == 'comment reply' and "u/nhentai-tag-bot" in message.body.lower()
+        usernameInBody = message.subject == 'comment reply' and "u/nhentaitagbot" in message.body.lower()
         linkMessage = message.subject == "[Link]" or message.subject == "re: [Link]"
         linkRequestInComment = message.subject == 'comment reply' and "!link" in message.body.lower()
 
