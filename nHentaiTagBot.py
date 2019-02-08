@@ -864,7 +864,7 @@ def processCommentReply(comment):
 def generateReplyLink(numbersCombi):
     #  %28 is ( and %29 is )
     # https://reddit.com/message/compose/?to=nHentai-Tag-Bot&subject=[Link]&message=(123456)+)12345(
-    replyString = "https://reddit.com/message/compose/?to=nHentai-Tag-Bot&subject=[Link]&message="
+    replyString = "https://reddit.com/message/compose/?to=nHentaiTagBot&subject=[Link]&message="
     if numbersCombi[nhentai]:
         i = 0
         numbers = numbersCombi[nhentai]
