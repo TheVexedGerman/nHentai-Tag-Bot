@@ -20,8 +20,8 @@ LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
-# PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource+CroppedHentaiMemes+hentaimemes'
-PARSED_SUBREDDIT = 'loli_tag_bot'
+PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource+CroppedHentaiMemes+hentaimemes'
+# PARSED_SUBREDDIT = 'loli_tag_bot'
 
 nhentaiKey = 0
 tsuminoKey = 1
@@ -37,8 +37,8 @@ def addFooter():
 def authenticate():
     print("Authenticating...")
     reddit = praw.Reddit(
-        # 'nhentaibot'
-        'thevexedgermanbot'
+        'nhentaibot'
+        # 'thevexedgermanbot'
     )
     print("Authenticated as {}".format(reddit.user.me()))
     return reddit
@@ -210,6 +210,7 @@ def processComment(comment):
     if comment.id not in messagesRepliedTo and comment.author.name != reddit.user.me():
         replyString = ""
         numbersCombi = getNumbers(comment)
+        #TODO make this more efficient
         combination = []
         i = 0
         if numbersCombi:
@@ -235,37 +236,6 @@ def processComment(comment):
                 elif key == ehentaiKey:
                     processedData = ehentai.analyseNumber(number)
                     replyString += ehentai.generateReplyString(processedData, number)
-            # #TODO combine and condense this, since most is redundant
-            # if numbersCombi[nhentaiKey]:
-            #     numbers = numbersCombi[nhentaiKey]
-            #     if len(numbers) > 5:
-            #         replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
-            #     numbers = numbers[:5]
-            #     for number in numbers:
-            #         if replyString:
-            #             replyString += "&#x200B;\n\n"
-            #         processedData = nhentai.analyseNumber(number)
-            #         replyString += nhentai.generateReplyString(processedData, number)
-            # if numbersCombi[tsuminoKey]:
-            #     numbers = numbersCombi[tsuminoKey]
-            #     if len(numbers) > 5:
-            #         replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
-            #     numbers = numbers[:5]
-            #     for number in numbers:
-            #         if replyString:
-            #             replyString += "&#x200B;\n\n"
-            #         processedData = tsumino.analyseNumber(number)
-            #         replyString += tsumino.generateReplyString(processedData, number)
-            # if numbersCombi[ehentaiKey]:
-            #     numbers = numbersCombi[ehentaiKey]
-            #     if len(numbers) > 5:
-            #         replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
-            #     numbers = numbers[:5]
-            #     for number in numbers:
-            #         if replyString:
-            #             replyString += "&#x200B;\n\n"
-            #         processedData = ehentai.analyseNumber(number)
-            #         replyString += ehentai.generateReplyString(processedData, number)
         if replyString:
             replyString += addFooter()
             messagesRepliedTo.append(writeCommentReply(replyString, comment))
@@ -420,10 +390,12 @@ def processCommentReply(comment):
         if (redacted and (nhentaiNumbers or tsuminoNumbers or ehentaiNumbers)) or not redacted:
             replyString += "If you also want to receive the link [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]) +")\n\n"
         replyString += "---\n\n"
-        replyString += "^(Please be aware that this action will only be performed for the first !links reply to each comment.)\n\n"
-        replyString += "^(Subsequent requests have to use the message link)"
-        replyString += "^(It appears that the official reddit app has issues handling pre-formatted PM links. Consider using an alternative app or submitting an issue to reddit.)"
-        replyString += "^(To manually get the link PM with the title **[Link]** and the body containing the number in the appropriate parentheses.)"
+        replyString += "^Please be aware that this action will only be performed for the first !links reply to each comment.\n\n"
+        subReplyString = ""
+        subReplyString += "^^Subsequent requests have to use the message link.\n\n"
+        subReplyString += "^^It appears that the official reddit app has issues handling pre-formatted PM links. Consider using an alternative app or submitting an issue to reddit.\n\n"
+        subReplyString += "^^To manually get the link PM with the title **[Link]** and the body containing the number in the appropriate parentheses.\n\n"
+        replyString += re.sub(r' ', '&#32;', subReplyString)
         print(linkString)
         print(replyString)
     if linkString and replyString:
@@ -478,11 +450,11 @@ def generateReplyLink(numbersCombi):
     return replyString
 
 
-# if __name__ == '__main__':
-#     while True:
-#         try:
-#             main()
-#         except Exception as e:
-#             pass
+if __name__ == '__main__':
+    while True:
+        try:
+            main()
+        except Exception as e:
+            pass
 
-main()
+# main()
