@@ -7,6 +7,11 @@ import time
 import datetime
 from bs4 import BeautifulSoup
 
+import nhentai
+import ehentai
+import tsumino
+import comment as commentpy
+
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
 API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/'
 API_URL_EHENTAI = "https://api.e-hentai.org/api.php"
@@ -18,237 +23,15 @@ TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource+CroppedHentaiMemes+hentaimemes'
 # PARSED_SUBREDDIT = 'loli_tag_bot'
 
-nhentai = 0
-tsumino = 1
-ehentai = 2
+nhentaiKey = 0
+tsuminoKey = 1
+ehentaiKey = 2
 
 messagesRepliedTo = []
 
 def addFooter():
     # Needs to use ASCII code to not break reddit formatting &#32; is space &#40; is ( and &#41; is )
     return "---\n\n^&#40;nHentai&#41;,&#32;&#41;Tsumino&#40;,&#32;}e-hentai/token{&#32;|&#32;min&#32;5&#32;digits&#32;|&#32;[Contact](https://www.reddit.com/message/compose/?to=thevexedgerman&subject=[nHentai-Bot])&#32;|&#32;[Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)"
-
-
-def additionalTagsString(entries, initialText, isNhentai=True):
-    first = True
-    replyString = ""
-    if isNhentai:
-        for entry in entries:
-            if first:
-                replyString += "**" + initialText + "**: " + entry[0] + " (" + format(entry[1], ',d') + ")"
-                first = False
-            else:
-                replyString += ", " + entry[0] + " (" + format(entry[1], ',d') + ")"
-    else:
-        for entry in entries:
-            if first:
-                replyString += "**" + initialText + "**: " + entry
-                first = False
-            else:
-                replyString += ", " + entry
-    return replyString
-
-
-def analyseNumberNhentai(galleryNumber):
-    title = ''
-    numberOfPages = 0
-    listOfTags = []
-    languages = []
-    artists = []
-    categories = []
-    parodies = []
-    characters = []
-    groups = []
-    isLoli = False
-    rawData = getJSON(galleryNumber)
-    if rawData == [404]:
-        return rawData
-    if rawData:
-        # print(rawData)
-        title = rawData['title']['pretty']
-        numberOfPages = rawData['num_pages']
-        for tags in rawData['tags']:
-            if 'tag' in tags['type']:
-                listOfTags.append([tags['name'], tags['count']])
-            elif 'language' in tags['type']:
-                languages.append([tags['name'], tags['count']])
-            elif 'artist' in tags['type']:
-                artists.append([tags['name'], tags['count']])
-            elif 'category' in tags['type']:
-                categories.append([tags['name'], tags['count']])
-            elif 'parody' in tags['type']:
-                parodies.append([tags['name'], tags['count']])
-            elif 'character' in tags['type']:
-                characters.append([tags['name'], tags['count']])
-            elif 'group' in tags['type']:
-                groups.append([tags['name'], tags['count']])
-        if listOfTags:
-            for entry in listOfTags:
-                if 'lolicon' in entry[0]:
-                    isLoli = True
-                elif 'shotacon' in entry[0]:
-                    isLoli = True
-
-    processedData = [title, numberOfPages, listOfTags, languages, artists, categories, parodies, characters, groups, isLoli]
-    # Sort the tags by descending popularity to imitate website behavior
-    i = 0
-    for tagList in processedData:
-        if i > 1 and i < 9:
-            processedData[i] = sorted(tagList, key=lambda tags: tags[1], reverse=True)
-        i += 1
-    # print(processedData)
-    return processedData
-
-
-def analyseNumberTsumino(galleryNumber):
-    title = ''
-    numberOfPages = 0
-    rating = ''
-    category = []
-    group = []
-    artist = []
-    parody = []
-    tag = []
-    collection = []
-    isLoli = False
-
-    response = requests.get(API_URL_TSUMINO+str(galleryNumber))
-    print(response)
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, features="html.parser")
-        # title finder
-        try:
-            title = soup.find('div', id="Title").string.replace('\n','')
-            print(title)
-        except:
-            print("No Title")
-
-        # pages finder
-        try:
-            numberOfPages = soup.find('div', id="Pages").string.replace('\n','')
-            print(numberOfPages)
-        except:
-            print("No Pages")
-
-        # rating finder
-        try:
-            rating = soup.find('div', id="Rating").string.replace('\n','')
-            print(rating)
-        except:
-            print("No Rating")
-
-        # category finder
-        try:
-            category = [a.get('data-define') for a in soup.find('div', id="Category").findAll('a')]
-            print(category)
-        except:
-            print("No Category")
-
-        # group finder
-        try:
-            group = [a.get('data-define') for a in soup.find('div', id="Group").findAll('a')]
-            print(group)
-        except:
-            print("No Group")
-
-        # artist finder
-        try:
-            artist = [a.get('data-define') for a in soup.find('div', id="Artist").findAll('a')]
-            print(artist)
-        except:
-            print("No Artist")
-
-        # collection finder
-        try:
-            collection = [a.get('data-define') for a in soup.find('div', id="Collection").findAll('a')]
-            print(collection)
-        except:
-            print("No Collection")
-
-        # parody finder
-        try:
-            parody = [a.get('data-define') for a in soup.find('div', id="Parody").findAll('a')]
-            print(parody)
-        except:
-            print("No Parody")
-
-        # character finder
-        try:
-            character = [a.get('data-define') for a in soup.find('div', id="Character").findAll('a')]
-            print(character)
-        except:
-            print("No Character")
-
-        # tag finder
-        try:
-            tag = [a.get('data-define') for a in soup.find('div', id="Tag").findAll('a')]
-            print(tag)
-        except:
-            print("No Tags")
-
-        if tag:
-            for entry in tag:
-                if 'Lolicon' in entry:
-                    isLoli = True
-                elif 'Shotacon' in entry:
-                    isLoli = True
-
-        return [title, numberOfPages, rating, category, group, artist, parody, tag, collection, isLoli]
-    else:
-        return []
-
-
-def analyseNumberEhentai(galleryNumberAndToken):
-    galleryID = galleryNumberAndToken[0]
-    galleryToken = galleryNumberAndToken[1]
-    title = ''
-    numberOfPages = 0
-    category = ''
-    rating = ''
-    artist = []
-    character = []
-    female = []
-    group = []
-    language = []
-    male = []
-    parody = []
-    misc = []
-    isLoli = False
-
-    requestString = '{"method": "gdata","gidlist": [['+ str(galleryID) + ',' + '"' + galleryToken +'"]],"namespace": 1}'
-    ehentaiJSON = requests.post(API_URL_EHENTAI, json=json.loads(requestString)).json()
-
-    if 'gmetadata' in ehentaiJSON:
-        title = ehentaiJSON['gmetadata'][0]['title']
-        category = ehentaiJSON['gmetadata'][0]['category']
-        numberOfPages = ehentaiJSON['gmetadata'][0]['filecount']
-        rating = ehentaiJSON['gmetadata'][0]['rating']
-        tags = ehentaiJSON['gmetadata'][0]['tags']
-        for tag in tags:
-        # print(tag)
-            if 'artist:' in tag:
-                artist.append(re.search(r'(?<=artist:).+', tag).group(0))
-            elif 'character:' in tag:
-                character.append(re.search(r'(?<=character:).+', tag).group(0))
-            elif 'female:' in tag:
-                female.append(re.search(r'(?<=female:).+', tag).group(0))
-            elif 'group:' in tag:
-                group.append(re.search(r'(?<=group:).+', tag).group(0))
-            elif 'language:' in tag:
-                language.append(re.search(r'(?<=language:).+', tag).group(0))
-            elif 'male:' in tag:
-                male.append(re.search(r'(?<=male:).+', tag).group(0))
-            elif 'parody:' in tag:
-                parody.append(re.search(r'(?<=parody:).+', tag).group(0))
-            else:
-                misc.append(re.search(r'.+', tag).group(0))
-            if "Lolicon" in female:
-                isLoli = True
-            elif "Shotacon" in male:
-                isLoli = True
-
-        #TODO actual loli check
-    return [title, numberOfPages, category, rating, artist, character, female, group, language, male, parody, misc, isLoli]
 
 
 def authenticate():
@@ -309,205 +92,13 @@ def main():
         runBot(reddit)
 
 
-def generateReplyStringNhentai(processedData, galleryNumber):
-    # parodies
-    # characters
-    # tags
-    # artists
-    # groups
-    # languages
-    # categories
-    title = 0
-    numberOfPages = 1
-    listOfTags = 2
-    languages = 3
-    artists = 4
-    categories = 5
-    parodies = 6
-    characters = 7
-    groups = 8
-    isLoli = 9
-    replyString = ""
-    if processedData[0] == 404:
-        replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
-        replyString += "nHentai returned 404 for this number. The gallery has either been removed or doesn't exist yet.\n\n"
-        return replyString
-    if processedData[title]:
-        if processedData[isLoli]:
-            replyString += ">[REDACTED]\n\n"
-        else:
-            replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
-        replyString += "**Title**: " + processedData[title] + "\n\n"
-        replyString += "**Number of pages**: " + str(processedData[numberOfPages]) + "\n\n"
-        
-        if processedData[characters]:
-            replyString += additionalTagsString(processedData[characters], "Characters") + "\n\n"
-        if processedData[parodies]:
-            replyString += additionalTagsString(processedData[parodies], "Parodies") + "\n\n"
-        if processedData[listOfTags]:
-            replyString += additionalTagsString(processedData[listOfTags], "Tags") + "\n\n"
-        if processedData[artists]:
-            replyString += additionalTagsString(processedData[artists], "Artists") + "\n\n"
-        if processedData[groups]:
-            replyString += additionalTagsString(processedData[groups], "Groups") + "\n\n"
-        if processedData[languages]:
-            replyString += additionalTagsString(processedData[languages], "Languages") + "\n\n"
-        if processedData[categories]:
-            replyString += additionalTagsString(processedData[categories], "Categories") + "\n\n"
-    # print (replyString)
-    return replyString
-
-
-def generateReplyStringTsumino(processedData, galleryNumber):
-    # Title
-    # Uploader (Rejected)
-    # Uploaded (Rejected)
-    # Pages
-    # Rating
-    # My Rating (Rejected)
-    # Category
-    # Group
-    # Collection (optional)
-    # Artist
-    # Parody (optional)
-    # Character
-    # Tag
-    # [title, numberOfPages, rating, category, group, artist, parody, tag, collection]
-    title = 0
-    pages = 1
-    rating = 2
-    category = 3
-    group = 4
-    artist = 5
-    parody = 6
-    tag = 7
-    collection = 8
-    isLoli = 9
-    replyString = ""
-    print("Tsumino replyStringGenerator Start")
-
-    if processedData:
-        if processedData[isLoli]:
-            replyString += ">Tsumino: [REDACTED]\n\n"
-        else:
-            replyString += ">Tsumino: " + str(galleryNumber).zfill(5) + "\n\n"
-        if processedData[title]:
-            replyString += "**Title**: " + processedData[title] + "\n\n"
-        replyString += "**Number of pages**: " + str(processedData[pages]) + "\n\n"
-        if processedData[rating]:
-            replyString += "**Rating**: " + processedData[rating] + "\n\n"
-
-        if processedData[category]:
-            replyString += additionalTagsString(processedData[category], "Category", False) + "\n\n"
-        if processedData[group]:
-            replyString += additionalTagsString(processedData[group], "Group", False) + "\n\n"
-        if processedData[collection]:
-            replyString += additionalTagsString(processedData[collection], "Collection", False) + "\n\n"
-        if processedData[artist]:
-            replyString += additionalTagsString(processedData[artist], "Artist", False) + "\n\n"
-        if processedData[parody]:
-            replyString += additionalTagsString(processedData[parody], "Parody", False) + "\n\n"
-        if processedData[tag]:
-            replyString += additionalTagsString(processedData[tag], "Tag", False) + "\n\n"
-    print("Tsumino replyStringGenerator End")
-    return replyString
-
-
-def generateReplyStringEhentai(processedData, galleryNumberAndToken):
-    # Title
-    # number of pages
-    # rating
-    # language
-    # parody
-    # character
-    # group
-    # artist
-    # male
-    # female
-    # misc
-
-    # [title, numberOfPages, category, rating, artist, character, female, group, language, male, parody, misc]
-    title = 0
-    numberOfPages = 1
-    category = 2
-    rating = 3
-    artist = 4
-    character = 5
-    female = 6
-    group = 7
-    language = 8
-    male = 9
-    parody = 10
-    misc = 11
-    isLoli = 12
-    replyString = ""
-
-    if processedData:
-        if processedData[isLoli]:
-            replyString += ">E-Hentai: [REDACTED]\n\n"
-        else:
-            replyString += ">E-Hentai: " + str(galleryNumberAndToken[0]) + "/" + str(galleryNumberAndToken[1]) + "\n\n"
-        if processedData[title]:
-            replyString += "**Title**: " + processedData[title] + "\n\n"
-        replyString += "**Number of pages**: " + str(processedData[numberOfPages]) + "\n\n"
-        if processedData[rating]:
-            replyString += "**Rating**: " + str(processedData[rating]) + "\n\n"
-        if processedData[category]:
-            replyString += "**Category**: " + processedData[category] + "\n\n"
-
-        if processedData[language]:
-            replyString += additionalTagsString(processedData[language], "Language", False) + "\n\n"
-        if processedData[parody]:
-            replyString += additionalTagsString(processedData[parody], "Parody", False) + "\n\n"
-        if processedData[character]:
-            replyString += additionalTagsString(processedData[character], "Character", False) + "\n\n"
-        if processedData[group]:
-            replyString += additionalTagsString(processedData[group], "Group", False) + "\n\n"
-        if processedData[artist]:
-            replyString += additionalTagsString(processedData[artist], "Artist", False) + "\n\n"
-        if processedData[male]:
-            replyString += additionalTagsString(processedData[male], "Male", False) + "\n\n"
-        if processedData[female]:
-            replyString += additionalTagsString(processedData[female], "Female", False) + "\n\n"
-        if processedData[misc]:
-            replyString += additionalTagsString(processedData[misc], "Misc", False) + "\n\n"
-    
-    return replyString
-
-
-def getJSON(galleryNumber):
-    if galleryNumber < 300000:
-        galleryNumber = str(galleryNumber)
-        request = requests.get(LINK_URL_NHENTAI+galleryNumber) # ['tags'] #
-        if request.status_code == 404:
-            return [404]
-        nhentaiTags = json.loads(re.search(r'(?<=N.gallery\().*(?=\))', request.text).group(0))
-        # nhentaiTags = request.json()
-        if "error" in nhentaiTags:
-            return []
-        else:
-            return nhentaiTags
-    else:
-        return []
-
-
-def getNhentaiNumber(comment):
-    numbers = re.findall(r'(?<=\()\d{5,6}(?=\))', comment)
-    try:
-        numbers = [int(number) for number in numbers]
-    except ValueError:
-        numbers = []
-    numbers = removeDuplicates(numbers)
-    return numbers
-
-
 def getNumbers(comment):
     numbersCombi = []
     numbersCombi = keyWordDetection(comment)
     if not numbersCombi:
-        nhentaiNumbers = getNhentaiNumber(comment.body)
-        tsuminoNumbers = getTsuminoNumbers(comment.body)
-        ehentaiNumbers = getEhentaiNumbers(comment.body)
+        nhentaiNumbers = nhentai.getNumbers(comment.body)
+        tsuminoNumbers = tsumino.getNumbers(comment.body)
+        ehentaiNumbers = ehentai.getNumbers(comment.body)
         numbersCombi = [nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]
     return numbersCombi
 
@@ -540,7 +131,7 @@ def scanForURL(comment):
         nhentaiNumbers = [int(number) for number in nhentaiNumbers]
     except ValueError:
         nhentaiNumbers = []
-    nhentaiNumbers = removeDuplicates(nhentaiNumbers)
+    nhentaiNumbers = commentpy.removeDuplicates(nhentaiNumbers)
 
     commentLower = comment.lower()
     tsuminoLinks = re.findall(r'https?:\/\/(?:www.)?tsumino.com\/book\/info\/\d{1,5}', commentLower)
@@ -553,7 +144,7 @@ def scanForURL(comment):
         tsuminoNumbers = [int(number) for number in tsuminoNumbers]
     except ValueError:
         tsuminoNumbers = []
-    tsuminoNumbers = removeDuplicates(tsuminoNumbers)
+    tsuminoNumbers = commentpy.removeDuplicates(tsuminoNumbers)
 
     ehentaiLinks = re.findall(r'https?:\/\/(?:www.)?e-hentai.org\/g\/\d{1,8}\/\w*', comment)
     ehentaiLinks += re.findall(r'https?:\/\/(?:www.)?exhentai.org\/g\/\d{1,8}\/\w*', comment)
@@ -583,34 +174,12 @@ def scanForURL(comment):
                 ehentaiNumbers.append([galleryID, galleryToken])
     except AttributeError:
         print("no ehentai page Links")
-    ehentaiNumbers = removeDupes2(ehentaiNumbers)
+    ehentaiNumbers = commentpy.removeDupes2(ehentaiNumbers)
 
     if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers:
         print("true return")
         return [nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]
     return []
-
-
-def getTsuminoNumbers(comment):
-    numbers = re.findall(r'(?<=\))\d{5}(?=\()', comment)
-    try:
-        numbers = [int(number) for number in numbers]
-    except ValueError:
-        numbers = []
-    numbers = removeDuplicates(numbers)
-    return numbers
-
-def getEhentaiNumbers(comment):
-    numbers = []
-    candidates = re.findall(r'(?<=\})\d{1,8}\/\w*?(?=\{)', comment)
-    try:
-        for entry in candidates:
-            galleryID = int(re.search(r'\d+(?=\/)', entry).group(0))
-            galleryToken = re.search(r'(?<=\/)\w+', entry).group(0)
-            numbers.append([galleryID, galleryToken])
-    except AttributeError:
-        print("Number Recognition failed Ehentai")
-    return numbers
 
 
 def getSavedMessages():
@@ -640,42 +209,42 @@ def getSavedLinkedMessages():
 def processComment(comment):
     if comment.id not in messagesRepliedTo and comment.author.name != reddit.user.me():
         replyString = ""
-        nhentai = 0
-        tsumino = 1
-        ehentai = 2
+        # nhentai = 0
+        # tsumino = 1
+        # ehentai = 2
         numbersCombi = getNumbers(comment)
         if numbersCombi:
             #TODO combine and condense this, since most is redundant
-            if numbersCombi[nhentai]:
-                numbers = numbersCombi[nhentai]
+            if numbersCombi[nhentaiKey]:
+                numbers = numbersCombi[nhentaiKey]
                 if len(numbers) > 5:
                     replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
                 numbers = numbers[:5]
                 for number in numbers:
                     if replyString:
                         replyString += "&#x200B;\n\n"
-                    processedData = analyseNumberNhentai(number)
-                    replyString += generateReplyStringNhentai(processedData, number)
-            if numbersCombi[tsumino]:
-                numbers = numbersCombi[tsumino]
+                    processedData = nhentai.analyseNumber(number)
+                    replyString += nhentai.generateReplyString(processedData, number)
+            if numbersCombi[tsuminoKey]:
+                numbers = numbersCombi[tsuminoKey]
                 if len(numbers) > 5:
                     replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
                 numbers = numbers[:5]
                 for number in numbers:
                     if replyString:
                         replyString += "&#x200B;\n\n"
-                    processedData = analyseNumberTsumino(number)
-                    replyString += generateReplyStringTsumino(processedData, number)
-            if numbersCombi[ehentai]:
-                numbers = numbersCombi[ehentai]
+                    processedData = tsumino.analyseNumber(number)
+                    replyString += tsumino.generateReplyString(processedData, number)
+            if numbersCombi[ehentaiKey]:
+                numbers = numbersCombi[ehentaiKey]
                 if len(numbers) > 5:
                     replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
                 numbers = numbers[:5]
                 for number in numbers:
                     if replyString:
                         replyString += "&#x200B;\n\n"
-                    processedData = analyseNumberEhentai(number)
-                    replyString += generateReplyStringEhentai(processedData, number)
+                    processedData = ehentai.analyseNumber(number)
+                    replyString += ehentai.generateReplyString(processedData, number)
         if replyString:
             replyString += addFooter()
             messagesRepliedTo.append(writeCommentReply(replyString, comment))
@@ -712,37 +281,22 @@ def processPMs(reddit):
             break
 
 
-# taken from https://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-whilst-preserving-order
-def removeDuplicates(seq):
-    seen = set()
-    seen_add = seen.add
-    return [x for x in seq if not (x in seen or seen_add(x))]
-
-# taken from https://stackoverflow.com/questions/6764909/python-how-to-remove-all-duplicate-items-from-a-list since the other one can't do nested lists
-def removeDupes2(X):
-    unique_X = []
-    for i, row in enumerate(X):
-        if row not in X[i + 1:]:
-            unique_X.append(row)
-    return unique_X
-
-
 def generateLinkString(numbersCombi):
     #generate the string that will be replied
     linkString = ""
     if numbersCombi:
-        if numbersCombi[nhentai]:
-            numbers = numbersCombi[nhentai]
+        if numbersCombi[nhentaiKey]:
+            numbers = numbersCombi[nhentaiKey]
             for number in numbers:
-                linkString += generateLinks(number, nhentai) + "\n\n"
-        if numbersCombi[tsumino]:
-            numbers = numbersCombi[tsumino]
+                linkString += generateLinks(number, nhentaiKey) + "\n\n"
+        if numbersCombi[tsuminoKey]:
+            numbers = numbersCombi[tsuminoKey]
             for number in numbers:
-                linkString += generateLinks(number, tsumino) + "\n\n"
-        if numbersCombi[ehentai]:
-            numbers = numbersCombi[ehentai]
+                linkString += generateLinks(number, tsuminoKey) + "\n\n"
+        if numbersCombi[ehentaiKey]:
+            numbers = numbersCombi[ehentaiKey]
             for number in numbers:
-                linkString += generateLinks(number, ehentai) + "\n\n"
+                linkString += generateLinks(number, ehentaiKey) + "\n\n"
         if numbersCombi[3]:
             numbers = numbersCombi[3]
             for number in numbers:
@@ -753,12 +307,12 @@ def generateLinkString(numbersCombi):
 def generateLinks(number, key):
     # make the link
     linkString = ""
-    if key == nhentai:
+    if key == nhentaiKey:
         linkString = LINK_URL_NHENTAI + str(number)
-    elif key == tsumino:
+    elif key == tsuminoKey:
         # Since Tsumino is just being HTML parsed the API URL is fine
         linkString = API_URL_TSUMINO + str(number)
-    elif key == ehentai:
+    elif key == ehentaiKey:
         linkString = LINK_URL_EHENTAI + str(number[0]) + "/" + number[1]
     return linkString
 
@@ -865,27 +419,27 @@ def generateReplyLink(numbersCombi):
     #  %28 is ( and %29 is )
     # https://reddit.com/message/compose/?to=nHentai-Tag-Bot&subject=[Link]&message=(123456)+)12345(
     replyString = "https://reddit.com/message/compose/?to=nHentaiTagBot&subject=[Link]&message="
-    if numbersCombi[nhentai]:
+    if numbersCombi[nhentaiKey]:
         i = 0
-        numbers = numbersCombi[nhentai]
+        numbers = numbersCombi[nhentaiKey]
         length = len(numbers) - 1
         for number in numbers:
             replyString += '%28' + str(number).zfill(5) + '%29'
-            if length != i or numbersCombi[tsumino] or numbersCombi[ehentai]:
+            if length != i or numbersCombi[tsuminoKey] or numbersCombi[ehentaiKey]:
                 replyString += '+'
             i += 1
-    if numbersCombi[tsumino]:
+    if numbersCombi[tsuminoKey]:
         i = 0
-        numbers = numbersCombi[tsumino]
+        numbers = numbersCombi[tsuminoKey]
         length = len(numbers) - 1
         for number in numbers:
             replyString += '%29' + str(number).zfill(5) + '%28'
-            if length != i or numbersCombi[ehentai]:
+            if length != i or numbersCombi[ehentaiKey]:
                 replyString += '+'
             i += 1
-    if numbersCombi[ehentai]:
+    if numbersCombi[ehentaiKey]:
         i = 0
-        numbers = numbersCombi[ehentai]
+        numbers = numbersCombi[ehentaiKey]
         length = len(numbers) - 1
         for number in numbers:
             replyString += '}' + str(number[0]) + '/' + str(number[1]) + '{'
