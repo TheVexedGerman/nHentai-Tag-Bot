@@ -1,4 +1,4 @@
-import comment
+import commentpy
 import requests
 import json
 import re
@@ -148,17 +148,17 @@ def generateReplyString(processedData, galleryNumber):
             replyString += "**Rating**: " + processedData[rating] + "\n\n"
 
         if processedData[category]:
-            replyString += comment.additionalTagsString(processedData[category], "Category", False) + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[category], "Category", False) + "\n\n"
         if processedData[group]:
-            replyString += comment.additionalTagsString(processedData[group], "Group", False) + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[group], "Group", False) + "\n\n"
         if processedData[collection]:
-            replyString += comment.additionalTagsString(processedData[collection], "Collection", False) + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[collection], "Collection", False) + "\n\n"
         if processedData[artist]:
-            replyString += comment.additionalTagsString(processedData[artist], "Artist", False) + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[artist], "Artist", False) + "\n\n"
         if processedData[parody]:
-            replyString += comment.additionalTagsString(processedData[parody], "Parody", False) + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[parody], "Parody", False) + "\n\n"
         if processedData[tag]:
-            replyString += comment.additionalTagsString(processedData[tag], "Tag", False) + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[tag], "Tag", False) + "\n\n"
     print("Tsumino replyStringGenerator End")
     return replyString
 
@@ -169,5 +169,5 @@ def getNumbers(comment):
         numbers = [int(number) for number in numbers]
     except ValueError:
         numbers = []
-    numbers = comment.removeDuplicates(numbers)
+    numbers = commentpy.removeDuplicates(numbers)
     return numbers

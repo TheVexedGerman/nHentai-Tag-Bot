@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 import nhentai
 import ehentai
 import tsumino
-import comment as commentpy
+import commentpy
 
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
 API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/'

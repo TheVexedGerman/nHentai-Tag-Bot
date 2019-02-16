@@ -1,4 +1,4 @@
-import comment
+import commentpy
 import requests
 import json
 import re
@@ -31,6 +31,9 @@ def analyseNumber(galleryNumberAndToken):
 
     if 'gmetadata' in ehentaiJSON:
         title = ehentaiJSON['gmetadata'][0]['title']
+        # clean up the title
+        title = re.sub(r'\(.*?\)', '', title)
+        title = re.sub(r'\[.*?\]', '', title)
         category = ehentaiJSON['gmetadata'][0]['category']
         numberOfPages = ehentaiJSON['gmetadata'][0]['filecount']
         rating = ehentaiJSON['gmetadata'][0]['rating']
@@ -105,21 +108,21 @@ def generateReplyString(processedData, galleryNumberAndToken):
             replyString += "**Category**: " + processedData[category] + "\n\n"
 
         if processedData[language]:
-            replyString += comment.additionalTagsString(processedData[language], "Language", False) + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[language], "Language", False) + "\n\n"
         if processedData[parody]:
-            replyString += comment.additionalTagsString(processedData[parody], "Parody", False) + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[parody], "Parody", False) + "\n\n"
         if processedData[character]:
-            replyString += comment.additionalTagsString(processedData[character], "Character", False) + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[character], "Character", False) + "\n\n"
         if processedData[group]:
-            replyString += comment.additionalTagsString(processedData[group], "Group", False) + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[group], "Group", False) + "\n\n"
         if processedData[artist]:
-            replyString += comment.additionalTagsString(processedData[artist], "Artist", False) + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[artist], "Artist", False) + "\n\n"
         if processedData[male]:
-            replyString += comment.additionalTagsString(processedData[male], "Male", False) + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[male], "Male", False) + "\n\n"
         if processedData[female]:
-            replyString += comment.additionalTagsString(processedData[female], "Female", False) + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[female], "Female", False) + "\n\n"
         if processedData[misc]:
-            replyString += comment.additionalTagsString(processedData[misc], "Misc", False) + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[misc], "Misc", False) + "\n\n"
     
     return replyString
 

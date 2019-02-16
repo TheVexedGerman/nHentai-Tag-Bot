@@ -1,4 +1,4 @@
-import comment
+import commentpy
 import requests
 import json
 import re
@@ -91,19 +91,19 @@ def generateReplyString(processedData, galleryNumber):
         replyString += "**Number of pages**: " + str(processedData[numberOfPages]) + "\n\n"
         
         if processedData[characters]:
-            replyString += comment.additionalTagsString(processedData[characters], "Characters") + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[characters], "Characters") + "\n\n"
         if processedData[parodies]:
-            replyString += comment.additionalTagsString(processedData[parodies], "Parodies") + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[parodies], "Parodies") + "\n\n"
         if processedData[listOfTags]:
-            replyString += comment.additionalTagsString(processedData[listOfTags], "Tags") + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[listOfTags], "Tags") + "\n\n"
         if processedData[artists]:
-            replyString += comment.additionalTagsString(processedData[artists], "Artists") + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[artists], "Artists") + "\n\n"
         if processedData[groups]:
-            replyString += comment.additionalTagsString(processedData[groups], "Groups") + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[groups], "Groups") + "\n\n"
         if processedData[languages]:
-            replyString += comment.additionalTagsString(processedData[languages], "Languages") + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[languages], "Languages") + "\n\n"
         if processedData[categories]:
-            replyString += comment.additionalTagsString(processedData[categories], "Categories") + "\n\n"
+            replyString += commentpy.additionalTagsString(processedData[categories], "Categories") + "\n\n"
     # print (replyString)
     return replyString
 
@@ -129,5 +129,5 @@ def getNumbers(comment):
         numbers = [int(number) for number in numbers]
     except ValueError:
         numbers = []
-    numbers = comment.removeDuplicates(numbers)
+    numbers = commentpy.removeDuplicates(numbers)
     return numbers
