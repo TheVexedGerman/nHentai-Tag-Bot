@@ -287,11 +287,11 @@ def generateLinkString(numbersCombi):
         if numbersCombi[ehentaiKey]:
             numbers = numbersCombi[ehentaiKey]
             for number in numbers:
-                linkString += generateLinks(number, ehentaiKey) + "\n\n"
-        if numbersCombi[3]:
-            numbers = numbersCombi[3]
-            for number in numbers:
-                linkString += "This number has been redacted and therefore no link can be generated. \n\n"
+                linkString += generateLinks(number, ehentai) + "\n\n"
+        # if numbersCombi[3]:
+        #     numbers = numbersCombi[3]
+        #     for number in numbers:
+        #         linkString += "This number has been redacted and therefore no link can be generated. \n\n"
     return linkString
 
 
