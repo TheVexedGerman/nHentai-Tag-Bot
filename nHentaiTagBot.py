@@ -20,8 +20,8 @@ LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
-PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource+CroppedHentaiMemes+hentaimemes'
-# PARSED_SUBREDDIT = 'loli_tag_bot'
+# PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource+CroppedHentaiMemes+hentaimemes'
+PARSED_SUBREDDIT = 'loli_tag_bot'
 
 nhentaiKey = 0
 tsuminoKey = 1
@@ -37,8 +37,8 @@ def addFooter():
 def authenticate():
     print("Authenticating...")
     reddit = praw.Reddit(
-        'nhentaibot'
-        # 'thevexedgermanbot'
+        # 'nhentaibot'
+        'thevexedgermanbot'
     )
     print("Authenticated as {}".format(reddit.user.me()))
     return reddit
@@ -209,42 +209,63 @@ def getSavedLinkedMessages():
 def processComment(comment):
     if comment.id not in messagesRepliedTo and comment.author.name != reddit.user.me():
         replyString = ""
-        # nhentai = 0
-        # tsumino = 1
-        # ehentai = 2
         numbersCombi = getNumbers(comment)
+        combination = []
+        i = 0
         if numbersCombi:
-            #TODO combine and condense this, since most is redundant
-            if numbersCombi[nhentaiKey]:
-                numbers = numbersCombi[nhentaiKey]
-                if len(numbers) > 5:
-                    replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
-                numbers = numbers[:5]
-                for number in numbers:
-                    if replyString:
-                        replyString += "&#x200B;\n\n"
+            for entry in numbersCombi:
+                for subentry in entry:
+                    combination.append([subentry, i])
+                i += 1
+        if combination:
+            if len(combination) > 5:
+                replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
+            combination = combination[:5]
+            for entry in combination:
+                if replyString:
+                    replyString += "&#x200B;\n\n"
+                number = entry[0]
+                key = entry[1]
+                if key == nhentaiKey:
                     processedData = nhentai.analyseNumber(number)
                     replyString += nhentai.generateReplyString(processedData, number)
-            if numbersCombi[tsuminoKey]:
-                numbers = numbersCombi[tsuminoKey]
-                if len(numbers) > 5:
-                    replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
-                numbers = numbers[:5]
-                for number in numbers:
-                    if replyString:
-                        replyString += "&#x200B;\n\n"
+                elif key == tsuminoKey:
                     processedData = tsumino.analyseNumber(number)
                     replyString += tsumino.generateReplyString(processedData, number)
-            if numbersCombi[ehentaiKey]:
-                numbers = numbersCombi[ehentaiKey]
-                if len(numbers) > 5:
-                    replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
-                numbers = numbers[:5]
-                for number in numbers:
-                    if replyString:
-                        replyString += "&#x200B;\n\n"
+                elif key == ehentaiKey:
                     processedData = ehentai.analyseNumber(number)
                     replyString += ehentai.generateReplyString(processedData, number)
+            # #TODO combine and condense this, since most is redundant
+            # if numbersCombi[nhentaiKey]:
+            #     numbers = numbersCombi[nhentaiKey]
+            #     if len(numbers) > 5:
+            #         replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
+            #     numbers = numbers[:5]
+            #     for number in numbers:
+            #         if replyString:
+            #             replyString += "&#x200B;\n\n"
+            #         processedData = nhentai.analyseNumber(number)
+            #         replyString += nhentai.generateReplyString(processedData, number)
+            # if numbersCombi[tsuminoKey]:
+            #     numbers = numbersCombi[tsuminoKey]
+            #     if len(numbers) > 5:
+            #         replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
+            #     numbers = numbers[:5]
+            #     for number in numbers:
+            #         if replyString:
+            #             replyString += "&#x200B;\n\n"
+            #         processedData = tsumino.analyseNumber(number)
+            #         replyString += tsumino.generateReplyString(processedData, number)
+            # if numbersCombi[ehentaiKey]:
+            #     numbers = numbersCombi[ehentaiKey]
+            #     if len(numbers) > 5:
+            #         replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
+            #     numbers = numbers[:5]
+            #     for number in numbers:
+            #         if replyString:
+            #             replyString += "&#x200B;\n\n"
+            #         processedData = ehentai.analyseNumber(number)
+            #         replyString += ehentai.generateReplyString(processedData, number)
         if replyString:
             replyString += addFooter()
             messagesRepliedTo.append(writeCommentReply(replyString, comment))
@@ -457,11 +478,11 @@ def generateReplyLink(numbersCombi):
     return replyString
 
 
-if __name__ == '__main__':
-    while True:
-        try:
-            main()
-        except Exception as e:
-            pass
+# if __name__ == '__main__':
+#     while True:
+#         try:
+#             main()
+#         except Exception as e:
+#             pass
 
-# main()
+main()
