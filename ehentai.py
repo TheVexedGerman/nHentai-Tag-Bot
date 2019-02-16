@@ -53,9 +53,9 @@ def analyseNumber(galleryNumberAndToken):
                 parody.append(re.search(r'(?<=parody:).+', tag).group(0))
             else:
                 misc.append(re.search(r'.+', tag).group(0))
-            if "Lolicon" in female:
+            if "lolicon" in female:
                 isLoli = True
-            elif "Shotacon" in male:
+            elif "shotacon" in male:
                 isLoli = True
 
         #TODO actual loli check
