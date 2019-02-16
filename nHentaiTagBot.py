@@ -242,9 +242,9 @@ def analyseNumberEhentai(galleryNumberAndToken):
                 parody.append(re.search(r'(?<=parody:).+', tag).group(0))
             else:
                 misc.append(re.search(r'.+', tag).group(0))
-            if "Lolicon" in female:
+            if "lolicon" in female:
                 isLoli = True
-            elif "Shotacon" in male:
+            elif "shotacon" in male:
                 isLoli = True
 
         #TODO actual loli check
@@ -743,10 +743,10 @@ def generateLinkString(numbersCombi):
             numbers = numbersCombi[ehentai]
             for number in numbers:
                 linkString += generateLinks(number, ehentai) + "\n\n"
-        if numbersCombi[3]:
-            numbers = numbersCombi[3]
-            for number in numbers:
-                linkString += "This number has been redacted and therefore no link can be generated. \n\n"
+        # if numbersCombi[3]:
+        #     numbers = numbersCombi[3]
+        #     for number in numbers:
+        #         linkString += "This number has been redacted and therefore no link can be generated. \n\n"
     return linkString
 
 
@@ -846,7 +846,9 @@ def processCommentReply(comment):
             replyString += "If you also want to receive the link [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]) +")\n\n"
         replyString += "---\n\n"
         replyString += "^(Please be aware that this action will only be performed for the first !links reply to each comment.)\n\n"
-        replyString += "^(Subsequent requests have to use the message link)"
+        replyString += "^(Subsequent requests have to use the message link)\n\n"
+        replyString += "^(It appears that the official reddit app has issues handling pre-formatted PM links. Consider using an alternative app or submitting an issue to reddit.)"
+        replyString += "^(To manually get the link PM with the title **[Link]** and the body containing the number in the appropriate parentheses.)"
         print(linkString)
         print(replyString)
     if linkString and replyString:
