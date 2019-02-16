@@ -401,6 +401,8 @@ def processCommentReply(comment):
         replyString += "---\n\n"
         replyString += "^(Please be aware that this action will only be performed for the first !links reply to each comment.)\n\n"
         replyString += "^(Subsequent requests have to use the message link)"
+        replyString += "^(It appears that the official reddit app has issues handling pre-formatted PM links. Consider using an alternative app or submitting an issue to reddit.)"
+        replyString += "^(To manually get the link PM with the title **[Link]** and the body containing the number in the appropriate parentheses.)"
         print(linkString)
         print(replyString)
     if linkString and replyString:
