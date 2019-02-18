@@ -138,3 +138,41 @@ def getNumbers(comment):
     except AttributeError:
         print("Number Recognition failed Ehentai")
     return numbers
+
+def scanURL(comment):
+    ehentaiNumbers = []
+    # having two sites makes getting the url more than with the others.
+    ehentaiLinks = re.findall(r'https?:\/\/(?:www.)?e-hentai.org\/g\/\d{1,8}\/\w*', comment)
+    ehentaiLinks += re.findall(r'https?:\/\/(?:www.)?exhentai.org\/g\/\d{1,8}\/\w*', comment)
+    try:
+        for link in ehentaiLinks:
+            # split the URL into the gallery number and token.
+            removeURL = re.search(r'(?<=\/g\/).+', link).group(0)
+            galleryID = int(re.search(r'\d+(?=\/)', removeURL).group(0))
+            galleryToken = re.search(r'(?<=\/)\w+', removeURL).group(0)
+            ehentaiNumbers.append([galleryID,galleryToken])
+    except AttributeError:
+        print("no ehentaiLinks")
+    except ValueError:
+        ehentaiNumbers = []
+    # again the two sites along with the page url and token
+    ehentaiPageLinks = re.findall(r'https?:\/\/(?:www.)?e-hentai.org\/s\/\w*\/\d{1,8}-\d{1,4}', comment)
+    ehentaiPageLinks += re.findall(r'https?:\/\/(?:www.)?exhentai.org\/s\/\w*\/\d{1,8}-\d{1,4}', comment)
+    # get all the gallery info from the page number and token
+    # TODO condense multiple entries into a single request.
+    try:
+        for link in ehentaiPageLinks:
+            removeURL = re.search(r'(?<=\/s\/).+', link).group(0)
+            galleryID = re.search(r'(?<=\/)\d+(?=-)', removeURL).group(0)
+            pageToken = re.search(r'\w+', removeURL).group(0)
+            page = re.search(r'(?<=-)\d+', removeURL).group(0)
+
+            resquestStringPage = '{"method": "gtoken","pagelist": [[' + galleryID +',"' + pageToken + '",' + page + ']]}'
+            ehentaiJSONpage = requests.post(API_URL_EHENTAI, json=json.loads(resquestStringPage)).json()
+            if 'tokenlist' in ehentaiJSONpage:
+                galleryToken = ehentaiJSONpage['tokenlist'][0]['token']
+                ehentaiNumbers.append([galleryID, galleryToken])
+    except AttributeError:
+        print("no ehentai page Links")
+    ehentaiNumbers = commentpy.removeDupes2(ehentaiNumbers)
+    return ehentaiNumbers

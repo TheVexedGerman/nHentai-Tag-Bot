@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 import nhentai
 import ehentai
 import tsumino
+import hitomila
 import commentpy
 
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
@@ -26,12 +27,14 @@ PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-B
 nhentaiKey = 0
 tsuminoKey = 1
 ehentaiKey = 2
+hitomilaKey = 3
+redactedKey = 4
 
 messagesRepliedTo = []
 
 def addFooter():
     # Needs to use ASCII code to not break reddit formatting &#32; is space &#40; is ( and &#41; is )
-    return "---\n\n^&#40;nHentai&#41;,&#32;&#41;Tsumino&#40;,&#32;}e-hentai/token{&#32;|&#32;min&#32;5&#32;digits&#32;|&#32;[Contact](https://www.reddit.com/message/compose/?to=thevexedgerman&subject=[nHentai-Bot])&#32;|&#32;[Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)"
+    return "---\n\n^&#40;nHentai&#41;,&#32;&#41;Tsumino&#40;,&#32;}e-hentai/token{&#32;|&#32;!hitomi.la!&#32;|&#32;min&#32;5&#32;digits&#32;|&#32;[Contact](https://www.reddit.com/message/compose/?to=thevexedgerman&subject=[nHentai-Bot])&#32;|&#32;[Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)"
 
 
 def authenticate():
@@ -99,7 +102,8 @@ def getNumbers(comment):
         nhentaiNumbers = nhentai.getNumbers(comment.body)
         tsuminoNumbers = tsumino.getNumbers(comment.body)
         ehentaiNumbers = ehentai.getNumbers(comment.body)
-        numbersCombi = [nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]
+        hitomilaNumbers = hitomila.getNumbers(comment.body)
+        numbersCombi = [nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]
     return numbersCombi
 
 
@@ -120,65 +124,16 @@ def scanForURL(comment):
     nhentaiNumbers = []
     tsuminoNumbers = []
     ehentaiNumbers = []
+    hitomilaNumbers = []
 
-    nhentaiLinks = re.findall(r'https?:\/\/(?:www.)?nhentai.net\/g\/\d{1,6}', comment)
-    print(nhentaiLinks)
-    try:
-        nhentaiNumbers = [re.search(r'\d+', link).group(0) for link in nhentaiLinks]
-    except AttributeError:
-        print("No nHentai links")
-    try:
-        nhentaiNumbers = [int(number) for number in nhentaiNumbers]
-    except ValueError:
-        nhentaiNumbers = []
-    nhentaiNumbers = commentpy.removeDuplicates(nhentaiNumbers)
+    nhentaiNumbers = nhentai.scanURL(comment)
+    tsuminoNumbers = tsumino.scanURL(comment)
+    ehentaiNumbers = ehentai.scanURL(comment)
+    hitomilaNumbers = hitomila.scanURL(comment)
 
-    commentLower = comment.lower()
-    tsuminoLinks = re.findall(r'https?:\/\/(?:www.)?tsumino.com\/book\/info\/\d{1,5}', commentLower)
-    tsuminoLinks += re.findall(r'https?:\/\/(?:www.)?tsumino.com\/read\/view\/\d{1,5}', commentLower)
-    try:
-        tsuminoNumbers = [re.search(r'\d+', link).group(0) for link in tsuminoLinks]
-    except AttributeError:
-        print("No Tsumino links")
-    try:
-        tsuminoNumbers = [int(number) for number in tsuminoNumbers]
-    except ValueError:
-        tsuminoNumbers = []
-    tsuminoNumbers = commentpy.removeDuplicates(tsuminoNumbers)
-
-    ehentaiLinks = re.findall(r'https?:\/\/(?:www.)?e-hentai.org\/g\/\d{1,8}\/\w*', comment)
-    ehentaiLinks += re.findall(r'https?:\/\/(?:www.)?exhentai.org\/g\/\d{1,8}\/\w*', comment)
-    try:
-        for link in ehentaiLinks:
-            removeURL = re.search(r'(?<=\/g\/).+', link).group(0)
-            galleryID = int(re.search(r'\d+(?=\/)', removeURL).group(0))
-            galleryToken = re.search(r'(?<=\/)\w+', removeURL).group(0)
-            ehentaiNumbers.append([galleryID,galleryToken])
-    except AttributeError:
-        print("no ehentaiLinks")
-    except ValueError:
-        ehentaiNumbers = []
-    ehentaiPageLinks = re.findall(r'https?:\/\/(?:www.)?e-hentai.org\/s\/\w*\/\d{1,8}-\d{1,4}', comment)
-    ehentaiPageLinks += re.findall(r'https?:\/\/(?:www.)?exhentai.org\/s\/\w*\/\d{1,8}-\d{1,4}', comment)
-    try:
-        for link in ehentaiPageLinks:
-            removeURL = re.search(r'(?<=\/s\/).+', link).group(0)
-            galleryID = re.search(r'(?<=\/)\d+(?=-)', removeURL).group(0)
-            pageToken = re.search(r'\w+', removeURL).group(0)
-            page = re.search(r'(?<=-)\d+', removeURL).group(0)
-
-            resquestStringPage = '{"method": "gtoken","pagelist": [[' + galleryID +',"' + pageToken + '",' + page + ']]}'
-            ehentaiJSONpage = requests.post(API_URL_EHENTAI, json=json.loads(resquestStringPage)).json()
-            if 'tokenlist' in ehentaiJSONpage:
-                galleryToken = ehentaiJSONpage['tokenlist'][0]['token']
-                ehentaiNumbers.append([galleryID, galleryToken])
-    except AttributeError:
-        print("no ehentai page Links")
-    ehentaiNumbers = commentpy.removeDupes2(ehentaiNumbers)
-
-    if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers:
+    if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or hitomilaNumbers:
         print("true return")
-        return [nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]
+        return [nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]
     return []
 
 
@@ -236,6 +191,9 @@ def processComment(comment):
                 elif key == ehentaiKey:
                     processedData = ehentai.analyseNumber(number)
                     replyString += ehentai.generateReplyString(processedData, number)
+                elif key == hitomilaKey:
+                    processedData = hitomila.analyseNumber(number)
+                    replyString += hitomila.generateReplyString(processedData, number)
         if replyString:
             replyString += addFooter()
             messagesRepliedTo.append(writeCommentReply(replyString, comment))
@@ -287,11 +245,15 @@ def generateLinkString(numbersCombi):
         if numbersCombi[ehentaiKey]:
             numbers = numbersCombi[ehentaiKey]
             for number in numbers:
-                linkString += generateLinks(number, ehentai) + "\n\n"
-        # if numbersCombi[3]:
-        #     numbers = numbersCombi[3]
-        #     for number in numbers:
-        #         linkString += "This number has been redacted and therefore no link can be generated. \n\n"
+                linkString += generateLinks(number, ehentaiKey) + "\n\n"
+        if numbersCombi[hitomilaKey]:
+            numbers = numbersCombi[hitomilaKey]
+            for number in numbers:
+                linkString += generateLinks(number, hitomilaKey) +"\n\n"
+        if numbersCombi[redactedKey]:
+            numbers = numbersCombi[redactedKey]
+            for number in numbers:
+                linkString += "This number has been redacted and therefore no link can be generated. \n\n"
     return linkString
 
 
@@ -305,18 +267,21 @@ def generateLinks(number, key):
         linkString = API_URL_TSUMINO + str(number)
     elif key == ehentaiKey:
         linkString = LINK_URL_EHENTAI + str(number[0]) + "/" + number[1]
+    elif key == hitomilaKey:
+        linkString = hitomila.API_URL_HITOMILA + str(number) + ".html"
     return linkString
 
 
 def scanPM(message):
     linkString = ""
     numbersCombi = getNumbers(message)
-    numberOfInts = len(numbersCombi[0])+len(numbersCombi[1])+len(numbersCombi[2])
+    numberOfInts = len(numbersCombi[0])+len(numbersCombi[1])+len(numbersCombi[2])+len(numbersCombi[3])
     if (numberOfInts) > 0:
         if numberOfInts == 1:
             linkString += "Here is your link:\n\n"
         else:
             linkString += "Here are your links:\n\n"
+    numbersCombi.append(False)
     linkString += generateLinkString(numbersCombi)
     message.reply(linkString)
     message.mark_read()
@@ -326,6 +291,7 @@ def processCommentReply(comment):
     tsuminoNumbers = []
     ehentaiNumbers = []
     nhentaiNumbers = []
+    hitomilaNumbers = []
     redacted = []
     replyString = ""
     linkString = ""
@@ -367,6 +333,15 @@ def processCommentReply(comment):
             print(ehentaiNumbers)
             print(parentComment)
 
+            hitomilaNumbers = re.findall(r'(?<=>Hitomi.la: )\d{5,8}', parentComment)
+            try:
+                hitomilaNumbers = [int(number) for number in hitomilaNumbers]
+            except ValueError:
+                hitomilaNumbers = []
+            print(hitomilaNumbers)
+
+            parentComment = re.sub(r'(?<=>Hitomi.la: )\d{5,8}', '', parentComment)
+
             nhentaiNumbers = re.findall(r'\d{5,6}', parentComment)
             try:
                 nhentaiNumbers = [int(number) for number in nhentaiNumbers]
@@ -375,22 +350,22 @@ def processCommentReply(comment):
 
             redacted = re.findall(r'\[REDACTED\]', parentComment)
             redacted = [True for entry in redacted]
-    if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or redacted:
-        numberOfInts = len(nhentaiNumbers)+len(tsuminoNumbers)+len(ehentaiNumbers)
+    if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or hitomilaNumbers or redacted:
+        numberOfInts = len(nhentaiNumbers)+len(tsuminoNumbers)+len(ehentaiNumbers)+len(hitomilaNumbers)
         if numberOfInts > 0:
             if numberOfInts == 1:
                 linkString += "Here is your link:\n\n"
             else:
                 linkString += "Here are your links:\n\n"
-        linkString += generateLinkString([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, redacted])
+        linkString += generateLinkString([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers, redacted])
         if not redacted:
             replyString += "You have been PM'd the links to the numbers above.\n\n"
         else:
             replyString += "Redaction prevents link generation. If there are numbers beside the redacted ones a link has been PM'd to you.\n\n"
         if (redacted and (nhentaiNumbers or tsuminoNumbers or ehentaiNumbers)) or not redacted:
-            replyString += "If you also want to receive the link [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]) +")\n\n"
+            replyString += "If you also want to receive the link [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]) +")\n\n"
         replyString += "---\n\n"
-        replyString += "^Please be aware that this action will only be performed for the first !links reply to each comment.\n\n"
+        replyString += "^(Please be aware that this action will only be performed for the first !links reply to each comment.)\n\n"
         subReplyString = ""
         subReplyString += "^^Subsequent requests have to use the message link.\n\n"
         subReplyString += "^^It appears that the official reddit app has issues handling pre-formatted PM links. Consider using an alternative app or submitting an issue to reddit.\n\n"
@@ -420,7 +395,7 @@ def generateReplyLink(numbersCombi):
         length = len(numbers) - 1
         for number in numbers:
             replyString += '%28' + str(number).zfill(5) + '%29'
-            if length != i or numbersCombi[tsuminoKey] or numbersCombi[ehentaiKey]:
+            if length != i or numbersCombi[tsuminoKey] or numbersCombi[ehentaiKey] or numbersCombi[hitomilaKey]:
                 replyString += '+'
             i += 1
     if numbersCombi[tsuminoKey]:
@@ -429,7 +404,7 @@ def generateReplyLink(numbersCombi):
         length = len(numbers) - 1
         for number in numbers:
             replyString += '%29' + str(number).zfill(5) + '%28'
-            if length != i or numbersCombi[ehentaiKey]:
+            if length != i or numbersCombi[ehentaiKey] or numbersCombi[hitomilaKey]:
                 replyString += '+'
             i += 1
     if numbersCombi[ehentaiKey]:
@@ -438,12 +413,21 @@ def generateReplyLink(numbersCombi):
         length = len(numbers) - 1
         for number in numbers:
             replyString += '}' + str(number[0]) + '/' + str(number[1]) + '{'
+            if length != i or numbersCombi[hitomilaKey]:
+                replyString += '+'
+            i += 1
+    if numbersCombi[hitomilaKey]:
+        i = 0
+        numbers = numbersCombi[hitomilaKey]
+        length = len(numbers) - 1
+        for number in numbers:
+            replyString += '!' + str(number).zfill(5) + '!'
             if length != i:
                 replyString += '+'
             i += 1
-    # if numbersCombi[3]:
+    # if numbersCombi[redactedKey]:
     #     i = 0
-    #     numbers = numbersCombi[3]:
+    #     numbers = numbersCombi[redactedKey]
     #     length = len(numbers) - 1
     #     for number in numbers:
     #         replyString += "This number has been removed for a reason. No link can be generated"

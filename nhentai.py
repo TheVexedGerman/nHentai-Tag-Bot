@@ -131,3 +131,18 @@ def getNumbers(comment):
         numbers = []
     numbers = commentpy.removeDuplicates(numbers)
     return numbers
+
+def scanURL(comment):
+    nhentaiNumbers = []
+    nhentaiLinks = re.findall(r'https?:\/\/(?:www.)?nhentai.net\/g\/\d{1,6}', comment)
+    print(nhentaiLinks)
+    try:
+        nhentaiNumbers = [re.search(r'\d+', link).group(0) for link in nhentaiLinks]
+    except AttributeError:
+        print("No nHentai links")
+    try:
+        nhentaiNumbers = [int(number) for number in nhentaiNumbers]
+    except ValueError:
+        nhentaiNumbers = []
+    nhentaiNumbers = commentpy.removeDuplicates(nhentaiNumbers)
+    return nhentaiNumbers

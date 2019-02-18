@@ -171,3 +171,21 @@ def getNumbers(comment):
         numbers = []
     numbers = commentpy.removeDuplicates(numbers)
     return numbers
+
+
+def scanURL(comment):
+    tsuminoNumbers = []
+    # use lowercase comment because tsumino has an inconsistent url scheme 
+    commentLower = comment.lower()
+    tsuminoLinks = re.findall(r'https?:\/\/(?:www.)?tsumino.com\/book\/info\/\d{1,5}', commentLower)
+    tsuminoLinks += re.findall(r'https?:\/\/(?:www.)?tsumino.com\/read\/view\/\d{1,5}', commentLower)
+    try:
+        tsuminoNumbers = [re.search(r'\d+', link).group(0) for link in tsuminoLinks]
+    except AttributeError:
+        print("No Tsumino links")
+    try:
+        tsuminoNumbers = [int(number) for number in tsuminoNumbers]
+    except ValueError:
+        tsuminoNumbers = []
+    tsuminoNumbers = commentpy.removeDuplicates(tsuminoNumbers)
+    return tsuminoNumbers
