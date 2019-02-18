@@ -22,7 +22,9 @@ LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
 PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource+CroppedHentaiMemes+hentaimemes'
+REDACTED_INFO_SUBS = ['Animemes']
 # PARSED_SUBREDDIT = 'loli_tag_bot'
+# REDACTED_INFO_SUBS = ['loli_tag_bot']
 
 nhentaiKey = 0
 tsuminoKey = 1
@@ -164,6 +166,7 @@ def getSavedLinkedMessages():
 def processComment(comment):
     if comment.id not in messagesRepliedTo and comment.author.name != reddit.user.me():
         replyString = ""
+        isRedacted = False
         numbersCombi = getNumbers(comment)
         #TODO make this more efficient
         combination = []
@@ -185,20 +188,32 @@ def processComment(comment):
                 if key == nhentaiKey:
                     processedData = nhentai.analyseNumber(number)
                     replyString += nhentai.generateReplyString(processedData, number)
+                    if processedData[len(processedData)-1]:
+                        isRedacted = True
                 elif key == tsuminoKey:
                     processedData = tsumino.analyseNumber(number)
                     replyString += tsumino.generateReplyString(processedData, number)
+                    if processedData[len(processedData)-1]:
+                        isRedacted = True
                 elif key == ehentaiKey:
                     processedData = ehentai.analyseNumber(number)
                     replyString += ehentai.generateReplyString(processedData, number)
+                    if processedData[len(processedData)-1]:
+                        isRedacted = True
                 elif key == hitomilaKey:
                     processedData = hitomila.analyseNumber(number)
                     replyString += hitomila.generateReplyString(processedData, number)
+                    if processedData[len(processedData)-1]:
+                        isRedacted = True
         if replyString:
+            if comment.subreddit in REDACTED_INFO_SUBS and isRedacted:
+                header = "YOUR QUERY LEADS TO LOLI/SHOTA.\n\nThis violates Animemes rule 7.2. You are advised to edit your comment to remove the number(s) before it gets deleted.\n\n&#x200B;\n\n"
+                replyString = header + replyString
             replyString += addFooter()
             messagesRepliedTo.append(writeCommentReply(replyString, comment))
         # required for message reply mark read
         return True
+
 
 
 def processPMs(reddit):
