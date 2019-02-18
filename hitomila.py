@@ -110,7 +110,7 @@ def generateReplyString(processedData, galleryNumber):
 
     if processedData:
         if not len(processedData) > 2:
-            replyString += ">Hitomi.la: " + str(galleryNumber) + "\n\n"
+            replyString += ">Hitomi.la: " + str(galleryNumber).zfill(5) + "\n\n"
             if processedData[0] == 'Redirect':
                 replyString += "This gallery is trying to redirect and therfore doesn't exist anymore. Please try a different one."
                 return replyString
@@ -119,8 +119,8 @@ def generateReplyString(processedData, galleryNumber):
         if processedData[isRedacted]:
             replyString += ">Hitomi.la: [REDACTED]\n\n"
         else:
-            replyString += ">Hitomi.la: " + str(galleryNumber) + "\n\n"
-                
+            replyString += ">Hitomi.la: " + str(galleryNumber).zfill(5) + "\n\n"
+
         if processedData[title]:
             replyString += "**Title**: " + processedData[title] + "\n\n"
         if processedData[pages] > 0:

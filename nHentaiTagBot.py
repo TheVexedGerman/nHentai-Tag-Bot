@@ -28,6 +28,7 @@ nhentaiKey = 0
 tsuminoKey = 1
 ehentaiKey = 2
 hitomilaKey = 3
+redactedKey = 4
 
 messagesRepliedTo = []
 
@@ -190,6 +191,9 @@ def processComment(comment):
                 elif key == ehentaiKey:
                     processedData = ehentai.analyseNumber(number)
                     replyString += ehentai.generateReplyString(processedData, number)
+                elif key == hitomilaKey:
+                    processedData = hitomila.analyseNumber(number)
+                    replyString += hitomila.generateReplyString(processedData, number)
         if replyString:
             replyString += addFooter()
             messagesRepliedTo.append(writeCommentReply(replyString, comment))
@@ -241,11 +245,15 @@ def generateLinkString(numbersCombi):
         if numbersCombi[ehentaiKey]:
             numbers = numbersCombi[ehentaiKey]
             for number in numbers:
-                linkString += generateLinks(number, ehentai) + "\n\n"
-        # if numbersCombi[3]:
-        #     numbers = numbersCombi[3]
-        #     for number in numbers:
-        #         linkString += "This number has been redacted and therefore no link can be generated. \n\n"
+                linkString += generateLinks(number, ehentaiKey) + "\n\n"
+        if numbersCombi[hitomilaKey]:
+            numbers = numbersCombi[hitomilaKey]
+            for number in numbers
+                linkString += generateLinks(number, hitomilaKey)
+        if numbersCombi[redactedKey]:
+            numbers = numbersCombi[redactedKey]:
+            for number in numbers:
+                linkString += "This number has been redacted and therefore no link can be generated. \n\n"
     return linkString
 
 
@@ -259,19 +267,21 @@ def generateLinks(number, key):
         linkString = API_URL_TSUMINO + str(number)
     elif key == ehentaiKey:
         linkString = LINK_URL_EHENTAI + str(number[0]) + "/" + number[1]
+    elif key == hitomilaKey:
+        linkString = hitomila.API_URL_HITOMILA + str(number) + ".html"
     return linkString
 
 
 def scanPM(message):
     linkString = ""
     numbersCombi = getNumbers(message)
-    numberOfInts = len(numbersCombi[0])+len(numbersCombi[1])+len(numbersCombi[2])
+    numberOfInts = len(numbersCombi[0])+len(numbersCombi[1])+len(numbersCombi[2])+len(numbersCombi[3])
     if (numberOfInts) > 0:
         if numberOfInts == 1:
             linkString += "Here is your link:\n\n"
         else:
             linkString += "Here are your links:\n\n"
-    linkString += generateLinkString(numbersCombi)
+    linkString += generateLinkString(numbersCombi + [])
     message.reply(linkString)
     message.mark_read()
 
@@ -280,6 +290,7 @@ def processCommentReply(comment):
     tsuminoNumbers = []
     ehentaiNumbers = []
     nhentaiNumbers = []
+    hitomilaNumbers = []
     redacted = []
     replyString = ""
     linkString = ""
@@ -320,6 +331,14 @@ def processCommentReply(comment):
             parentComment = re.sub(r'(?<=>E-Hentai: )\d{1,8}\/\w*', '', parentComment)
             print(ehentaiNumbers)
             print(parentComment)
+
+            hitomilaNumbers = re.findall(r'(?<=>Hitomi.la: )\d{5,8}', parentComment)
+            try:
+                hitomilaNumbers = [int(number) for number in hitomilaNumbers]
+            except ValueError:
+                hitomilaNumbers = []
+
+            parentComment = re.sub(r'(?<=>Hitomi.la: )\d{5,8}', '', parentComment)
 
             nhentaiNumbers = re.findall(r'\d{5,6}', parentComment)
             try:
