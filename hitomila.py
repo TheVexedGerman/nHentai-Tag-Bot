@@ -150,7 +150,7 @@ def scanURL(comment):
     hitomilaLinks = re.findall(r'https?:\/\/(?:www.)?hitomi.la\/galleries\/\d{1,8}', comment)
     hitomilaLinks += re.findall(r'https?:\/\/(?:www.)?hitomi.la\/reader\/\d{1,8}', comment)
     try:
-        tsuminohitomilaNumbersNumbers = [re.search(r'\d+', link).group(0) for link in hitomilaLinks]
+        hitomilaNumbers = [re.search(r'\d+', link).group(0) for link in hitomilaLinks]
     except AttributeError:
         print("No Tsumino links")
     try:
