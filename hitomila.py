@@ -91,7 +91,7 @@ def analyseNumber(galleryNumber):
                 elif "shota" in entry.lower():
                     isRedacted = True
 
-        return [title, numberOfPages, [artist], group, types, language, series, characters, tags, isRedacted]
+        return [title, numberOfPages, artist, group, types, language, series, characters, tags, isRedacted]
     else:
         return []
 
@@ -125,9 +125,9 @@ def generateReplyString(processedData, galleryNumber):
             replyString += "**Title**: " + processedData[title] + "\n\n"
         if processedData[pages] > 0:
             replyString += "**Number of pages**: " + str(processedData[pages]) + "\n\n"
-        
         if processedData[artist]:
-            replyString += commentpy.additionalTagsString(processedData[artist], "Artist", False) + "\n\n"
+            replyString += "**Artist**: " + processedData[artist] + "\n\n"
+        
         if processedData[group]:
             replyString += commentpy.additionalTagsString(processedData[group], "Group", False) + "\n\n"
         if processedData[types]:
@@ -143,7 +143,7 @@ def generateReplyString(processedData, galleryNumber):
     return replyString
 
 def getNumbers(comment):
-    numbers = re.findall(r'(?<=\!)\d{5,8}(?=\!', comment)
+    numbers = re.findall(r'(?<=\!)\d{5,8}(?=\!)', comment)
     try:
         numbers = [int(number) for number in numbers]
     except ValueError:

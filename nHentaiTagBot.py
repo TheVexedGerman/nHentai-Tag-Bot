@@ -248,10 +248,10 @@ def generateLinkString(numbersCombi):
                 linkString += generateLinks(number, ehentaiKey) + "\n\n"
         if numbersCombi[hitomilaKey]:
             numbers = numbersCombi[hitomilaKey]
-            for number in numbers
-                linkString += generateLinks(number, hitomilaKey)
+            for number in numbers:
+                linkString += generateLinks(number, hitomilaKey) +"\n\n"
         if numbersCombi[redactedKey]:
-            numbers = numbersCombi[redactedKey]:
+            numbers = numbersCombi[redactedKey]
             for number in numbers:
                 linkString += "This number has been redacted and therefore no link can be generated. \n\n"
     return linkString
@@ -281,7 +281,8 @@ def scanPM(message):
             linkString += "Here is your link:\n\n"
         else:
             linkString += "Here are your links:\n\n"
-    linkString += generateLinkString(numbersCombi + [])
+    numbersCombi.append(False)
+    linkString += generateLinkString(numbersCombi)
     message.reply(linkString)
     message.mark_read()
 
@@ -337,6 +338,7 @@ def processCommentReply(comment):
                 hitomilaNumbers = [int(number) for number in hitomilaNumbers]
             except ValueError:
                 hitomilaNumbers = []
+            print(hitomilaNumbers)
 
             parentComment = re.sub(r'(?<=>Hitomi.la: )\d{5,8}', '', parentComment)
 
@@ -348,22 +350,22 @@ def processCommentReply(comment):
 
             redacted = re.findall(r'\[REDACTED\]', parentComment)
             redacted = [True for entry in redacted]
-    if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or redacted:
-        numberOfInts = len(nhentaiNumbers)+len(tsuminoNumbers)+len(ehentaiNumbers)
+    if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or hitomilaNumbers or redacted:
+        numberOfInts = len(nhentaiNumbers)+len(tsuminoNumbers)+len(ehentaiNumbers)+len(hitomilaNumbers)
         if numberOfInts > 0:
             if numberOfInts == 1:
                 linkString += "Here is your link:\n\n"
             else:
                 linkString += "Here are your links:\n\n"
-        linkString += generateLinkString([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, redacted])
+        linkString += generateLinkString([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers, redacted])
         if not redacted:
             replyString += "You have been PM'd the links to the numbers above.\n\n"
         else:
             replyString += "Redaction prevents link generation. If there are numbers beside the redacted ones a link has been PM'd to you.\n\n"
         if (redacted and (nhentaiNumbers or tsuminoNumbers or ehentaiNumbers)) or not redacted:
-            replyString += "If you also want to receive the link [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]) +")\n\n"
+            replyString += "If you also want to receive the link [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]) +")\n\n"
         replyString += "---\n\n"
-        replyString += "^Please be aware that this action will only be performed for the first !links reply to each comment.\n\n"
+        replyString += "^(Please be aware that this action will only be performed for the first !links reply to each comment.)\n\n"
         subReplyString = ""
         subReplyString += "^^Subsequent requests have to use the message link.\n\n"
         subReplyString += "^^It appears that the official reddit app has issues handling pre-formatted PM links. Consider using an alternative app or submitting an issue to reddit.\n\n"
@@ -393,7 +395,7 @@ def generateReplyLink(numbersCombi):
         length = len(numbers) - 1
         for number in numbers:
             replyString += '%28' + str(number).zfill(5) + '%29'
-            if length != i or numbersCombi[tsuminoKey] or numbersCombi[ehentaiKey]:
+            if length != i or numbersCombi[tsuminoKey] or numbersCombi[ehentaiKey] or numbersCombi[hitomilaKey]:
                 replyString += '+'
             i += 1
     if numbersCombi[tsuminoKey]:
@@ -402,7 +404,7 @@ def generateReplyLink(numbersCombi):
         length = len(numbers) - 1
         for number in numbers:
             replyString += '%29' + str(number).zfill(5) + '%28'
-            if length != i or numbersCombi[ehentaiKey]:
+            if length != i or numbersCombi[ehentaiKey] or numbersCombi[hitomilaKey]:
                 replyString += '+'
             i += 1
     if numbersCombi[ehentaiKey]:
@@ -411,12 +413,21 @@ def generateReplyLink(numbersCombi):
         length = len(numbers) - 1
         for number in numbers:
             replyString += '}' + str(number[0]) + '/' + str(number[1]) + '{'
+            if length != i or numbersCombi[hitomilaKey]:
+                replyString += '+'
+            i += 1
+    if numbersCombi[hitomilaKey]:
+        i = 0
+        numbers = numbersCombi[hitomilaKey]
+        length = len(numbers) - 1
+        for number in numbers:
+            replyString += '!' + str(number).zfill(5) + '!'
             if length != i:
                 replyString += '+'
             i += 1
-    # if numbersCombi[3]:
+    # if numbersCombi[redactedKey]:
     #     i = 0
-    #     numbers = numbersCombi[3]:
+    #     numbers = numbersCombi[redactedKey]
     #     length = len(numbers) - 1
     #     for number in numbers:
     #         replyString += "This number has been removed for a reason. No link can be generated"
