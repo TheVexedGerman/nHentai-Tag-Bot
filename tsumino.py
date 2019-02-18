@@ -98,9 +98,9 @@ def analyseNumber(galleryNumber):
 
         if tag:
             for entry in tag:
-                if 'Lolicon' in entry:
+                if 'loli' in entry.lower():
                     isLoli = True
-                elif 'Shotacon' in entry:
+                elif 'shota' in entry.lower():
                     isLoli = True
 
         return [title, numberOfPages, rating, category, group, artist, parody, tag, collection, isLoli]
