@@ -84,6 +84,13 @@ def analyseNumber(galleryNumber):
         except:
             print("No Tags")
 
+        if tags:
+            for entry in tags:
+                if 'loli' in entry.lower():
+                    isRedacted = True
+                elif "shota" in entry.lower():
+                    isRedacted = True
+
         return [title, numberOfPages, [artist], group, types, language, series, characters, tags, isRedacted]
     else:
         return []
@@ -113,6 +120,7 @@ def generateReplyString(processedData, galleryNumber):
             replyString += ">Hitomi.la: [REDACTED]\n\n"
         else:
             replyString += ">Hitomi.la: " + str(galleryNumber) + "\n\n"
+                
         if processedData[title]:
             replyString += "**Title**: " + processedData[title] + "\n\n"
         if processedData[pages] > 0:
