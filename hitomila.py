@@ -142,3 +142,20 @@ def getNumbers(comment):
         numbers = []
     numbers = commentpy.removeDuplicates(numbers)
     return numbers
+
+def scanURL(comment):
+    hitomilaNumbers = []
+    # https://hitomi.la/galleries/1367588.html
+    # https://hitomi.la/reader/1367588.html#2
+    hitomilaLinks = re.findall(r'https?:\/\/(?:www.)?hitomi.la\/galleries\/\d{1,8}', comment)
+    hitomilaLinks += re.findall(r'https?:\/\/(?:www.)?hitomi.la\/reader\/\d{1,8}', comment)
+    try:
+        tsuminohitomilaNumbersNumbers = [re.search(r'\d+', link).group(0) for link in hitomilaLinks]
+    except AttributeError:
+        print("No Tsumino links")
+    try:
+        hitomilaNumbers = [int(number) for number in hitomilaNumbers]
+    except ValueError:
+        hitomilaNumbers = []
+    hitomilaNumbers = commentpy.removeDuplicates(hitomilaNumbers)
+    return hitomilaNumbers

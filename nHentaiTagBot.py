@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 import nhentai
 import ehentai
 import tsumino
+import hitomila
 import commentpy
 
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
@@ -26,6 +27,7 @@ PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-B
 nhentaiKey = 0
 tsuminoKey = 1
 ehentaiKey = 2
+hitomilaKey = 3
 
 messagesRepliedTo = []
 
@@ -99,7 +101,8 @@ def getNumbers(comment):
         nhentaiNumbers = nhentai.getNumbers(comment.body)
         tsuminoNumbers = tsumino.getNumbers(comment.body)
         ehentaiNumbers = ehentai.getNumbers(comment.body)
-        numbersCombi = [nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]
+        hitomilaNumbers = hitomila.getNumbers(comment.body)
+        numbersCombi = [nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]
     return numbersCombi
 
 
@@ -120,65 +123,16 @@ def scanForURL(comment):
     nhentaiNumbers = []
     tsuminoNumbers = []
     ehentaiNumbers = []
+    hitomilaNumbers = []
 
-    nhentaiLinks = re.findall(r'https?:\/\/(?:www.)?nhentai.net\/g\/\d{1,6}', comment)
-    print(nhentaiLinks)
-    try:
-        nhentaiNumbers = [re.search(r'\d+', link).group(0) for link in nhentaiLinks]
-    except AttributeError:
-        print("No nHentai links")
-    try:
-        nhentaiNumbers = [int(number) for number in nhentaiNumbers]
-    except ValueError:
-        nhentaiNumbers = []
-    nhentaiNumbers = commentpy.removeDuplicates(nhentaiNumbers)
+    nhentaiNumbers = nhentai.scanURL(comment)
+    tsuminoNumbers = tsumino.scanURL(comment)
+    ehentaiNumbers = ehentai.scanURL(comment)
+    hitomilaNumbers = hitomila.scanURL(comment)
 
-    commentLower = comment.lower()
-    tsuminoLinks = re.findall(r'https?:\/\/(?:www.)?tsumino.com\/book\/info\/\d{1,5}', commentLower)
-    tsuminoLinks += re.findall(r'https?:\/\/(?:www.)?tsumino.com\/read\/view\/\d{1,5}', commentLower)
-    try:
-        tsuminoNumbers = [re.search(r'\d+', link).group(0) for link in tsuminoLinks]
-    except AttributeError:
-        print("No Tsumino links")
-    try:
-        tsuminoNumbers = [int(number) for number in tsuminoNumbers]
-    except ValueError:
-        tsuminoNumbers = []
-    tsuminoNumbers = commentpy.removeDuplicates(tsuminoNumbers)
-
-    ehentaiLinks = re.findall(r'https?:\/\/(?:www.)?e-hentai.org\/g\/\d{1,8}\/\w*', comment)
-    ehentaiLinks += re.findall(r'https?:\/\/(?:www.)?exhentai.org\/g\/\d{1,8}\/\w*', comment)
-    try:
-        for link in ehentaiLinks:
-            removeURL = re.search(r'(?<=\/g\/).+', link).group(0)
-            galleryID = int(re.search(r'\d+(?=\/)', removeURL).group(0))
-            galleryToken = re.search(r'(?<=\/)\w+', removeURL).group(0)
-            ehentaiNumbers.append([galleryID,galleryToken])
-    except AttributeError:
-        print("no ehentaiLinks")
-    except ValueError:
-        ehentaiNumbers = []
-    ehentaiPageLinks = re.findall(r'https?:\/\/(?:www.)?e-hentai.org\/s\/\w*\/\d{1,8}-\d{1,4}', comment)
-    ehentaiPageLinks += re.findall(r'https?:\/\/(?:www.)?exhentai.org\/s\/\w*\/\d{1,8}-\d{1,4}', comment)
-    try:
-        for link in ehentaiPageLinks:
-            removeURL = re.search(r'(?<=\/s\/).+', link).group(0)
-            galleryID = re.search(r'(?<=\/)\d+(?=-)', removeURL).group(0)
-            pageToken = re.search(r'\w+', removeURL).group(0)
-            page = re.search(r'(?<=-)\d+', removeURL).group(0)
-
-            resquestStringPage = '{"method": "gtoken","pagelist": [[' + galleryID +',"' + pageToken + '",' + page + ']]}'
-            ehentaiJSONpage = requests.post(API_URL_EHENTAI, json=json.loads(resquestStringPage)).json()
-            if 'tokenlist' in ehentaiJSONpage:
-                galleryToken = ehentaiJSONpage['tokenlist'][0]['token']
-                ehentaiNumbers.append([galleryID, galleryToken])
-    except AttributeError:
-        print("no ehentai page Links")
-    ehentaiNumbers = commentpy.removeDupes2(ehentaiNumbers)
-
-    if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers:
+    if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or hitomilaNumbers:
         print("true return")
-        return [nhentaiNumbers, tsuminoNumbers, ehentaiNumbers]
+        return [nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]
     return []
 
 
