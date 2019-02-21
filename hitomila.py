@@ -95,7 +95,7 @@ def analyseNumber(galleryNumber):
     else:
         return []
 
-def generateReplyString(processedData, galleryNumber):
+def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
     title = 0
     pages = 1
     artist = 2
@@ -116,6 +116,11 @@ def generateReplyString(processedData, galleryNumber):
                 return replyString
             if processedData[0] == 404:
                 replyString += "This gallery is returning a 404. The gallery has either been removed or doesn't exist yet."
+                
+        if processedData[isRedacted] and censorshipLevel > 1:
+            processedData[title] = "[REDACTED]"
+            processedData[artist] = "[REDACTED]"
+
         if processedData[isRedacted]:
             replyString += ">Hitomi.la: [REDACTED]\n\n"
         else:

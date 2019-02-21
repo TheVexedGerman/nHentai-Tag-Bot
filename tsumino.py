@@ -20,7 +20,7 @@ def analyseNumber(galleryNumber):
     parody = []
     tag = []
     collection = []
-    isLoli = False
+    isRedacted = False
 
     response = requests.get(API_URL_TSUMINO+str(galleryNumber))
     print(response)
@@ -99,16 +99,16 @@ def analyseNumber(galleryNumber):
         if tag:
             for entry in tag:
                 if 'loli' in entry.lower():
-                    isLoli = True
+                    isRedacted = True
                 elif 'shota' in entry.lower():
-                    isLoli = True
+                    isRedacted = True
 
-        return [title, numberOfPages, rating, category, group, artist, parody, tag, collection, isLoli]
+        return [title, numberOfPages, rating, category, group, artist, parody, tag, collection, isRedacted]
     else:
         return []
 
 
-def generateReplyString(processedData, galleryNumber):
+def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
     # Title
     # Uploader (Rejected)
     # Uploaded (Rejected)
@@ -132,12 +132,16 @@ def generateReplyString(processedData, galleryNumber):
     parody = 6
     tag = 7
     collection = 8
-    isLoli = 9
+    isRedacted = 9
     replyString = ""
     print("Tsumino replyStringGenerator Start")
 
     if processedData:
-        if processedData[isLoli]:
+        if processedData[isRedacted] and censorshipLevel > 1:
+            processedData[title] = "[REDACTED]"
+            processedData[artist] = ["[REDACTED]"]
+            
+        if processedData[isRedacted]:
             replyString += ">Tsumino: [REDACTED]\n\n"
         else:
             replyString += ">Tsumino: " + str(galleryNumber).zfill(5) + "\n\n"

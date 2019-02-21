@@ -19,7 +19,7 @@ def analyseNumber(galleryNumber):
     parodies = []
     characters = []
     groups = []
-    isLoli = False
+    isRedacted = False
     rawData = getJSON(galleryNumber)
     if rawData == [404]:
         return rawData
@@ -45,11 +45,11 @@ def analyseNumber(galleryNumber):
         if listOfTags:
             for entry in listOfTags:
                 if 'lolicon' in entry[0]:
-                    isLoli = True
+                    isRedacted = True
                 elif 'shotacon' in entry[0]:
-                    isLoli = True
+                    isRedacted = True
 
-    processedData = [title, numberOfPages, listOfTags, languages, artists, categories, parodies, characters, groups, isLoli]
+    processedData = [title, numberOfPages, listOfTags, languages, artists, categories, parodies, characters, groups, isRedacted]
     # Sort the tags by descending popularity to imitate website behavior
     i = 0
     for tagList in processedData:
@@ -59,7 +59,7 @@ def analyseNumber(galleryNumber):
     # print(processedData)
     return processedData
 
-def generateReplyString(processedData, galleryNumber):
+def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
     # parodies
     # characters
     # tags
@@ -76,14 +76,20 @@ def generateReplyString(processedData, galleryNumber):
     parodies = 6
     characters = 7
     groups = 8
-    isLoli = 9
+    isRedacted = 9
     replyString = ""
     if processedData[0] == 404:
         replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
         replyString += "nHentai returned 404 for this number. The gallery has either been removed or doesn't exist yet.\n\n"
         return replyString
     if processedData[title]:
-        if processedData[isLoli]:
+        if processedData[isRedacted] and censorshipLevel > 1:
+            processedData[title] = "[REDACTED]"
+            artistReplacement = processedData[artists]
+            inner = artistReplacement[0]
+            processedData[artists] = [["[REDACTED]", inner[1]]]
+            
+        if processedData[isRedacted]:
             replyString += ">[REDACTED]\n\n"
         else:
             replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"

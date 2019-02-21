@@ -24,7 +24,7 @@ def analyseNumber(galleryNumberAndToken):
     male = []
     parody = []
     misc = []
-    isLoli = False
+    isRedacted = False
 
     requestString = '{"method": "gdata","gidlist": [['+ str(galleryID) + ',' + '"' + galleryToken +'"]],"namespace": 1}'
     ehentaiJSON = requests.post(API_URL_EHENTAI, json=json.loads(requestString)).json()
@@ -57,15 +57,15 @@ def analyseNumber(galleryNumberAndToken):
             else:
                 misc.append(re.search(r'.+', tag).group(0))
             if "lolicon" in female:
-                isLoli = True
+                isRedacted = True
             elif "shotacon" in male:
-                isLoli = True
+                isRedacted = True
 
         #TODO actual loli check
-    return [title, numberOfPages, category, rating, artist, character, female, group, language, male, parody, misc, isLoli]
+    return [title, numberOfPages, category, rating, artist, character, female, group, language, male, parody, misc, isRedacted]
 
 
-def generateReplyString(processedData, galleryNumberAndToken):
+def generateReplyString(processedData, galleryNumberAndToken, censorshipLevel=0):
     # Title
     # number of pages
     # rating
@@ -91,11 +91,15 @@ def generateReplyString(processedData, galleryNumberAndToken):
     male = 9
     parody = 10
     misc = 11
-    isLoli = 12
+    isRedacted = 12
     replyString = ""
 
     if processedData:
-        if processedData[isLoli]:
+        if processedData[isRedacted] and censorshipLevel > 1:
+            processedData[title] = "[REDACTED]"
+            processedData[artist] = ["[REDACTED]"]
+
+        if processedData[isRedacted]:
             replyString += ">E-Hentai: [REDACTED]\n\n"
         else:
             replyString += ">E-Hentai: " + str(galleryNumberAndToken[0]) + "/" + str(galleryNumberAndToken[1]) + "\n\n"

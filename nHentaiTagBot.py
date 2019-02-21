@@ -167,7 +167,10 @@ def processComment(comment):
     if comment.id not in messagesRepliedTo and comment.author.name != reddit.user.me():
         replyString = ""
         isRedacted = False
+        censorshipLevel = 0
         numbersCombi = getNumbers(comment)
+        if comment.subreddit in REDACTED_INFO_SUBS:
+            censorshipLevel = 2
         #TODO make this more efficient
         combination = []
         i = 0
@@ -187,28 +190,28 @@ def processComment(comment):
                 key = entry[1]
                 if key == nhentaiKey:
                     processedData = nhentai.analyseNumber(number)
-                    replyString += nhentai.generateReplyString(processedData, number)
+                    replyString += nhentai.generateReplyString(processedData, number, censorshipLevel)
                     if processedData[len(processedData)-1]:
                         isRedacted = True
                 elif key == tsuminoKey:
                     processedData = tsumino.analyseNumber(number)
-                    replyString += tsumino.generateReplyString(processedData, number)
+                    replyString += tsumino.generateReplyString(processedData, number, censorshipLevel)
                     if processedData[len(processedData)-1]:
                         isRedacted = True
                 elif key == ehentaiKey:
                     processedData = ehentai.analyseNumber(number)
-                    replyString += ehentai.generateReplyString(processedData, number)
+                    replyString += ehentai.generateReplyString(processedData, number, censorshipLevel)
                     if processedData[len(processedData)-1]:
                         isRedacted = True
                 elif key == hitomilaKey:
                     processedData = hitomila.analyseNumber(number)
-                    replyString += hitomila.generateReplyString(processedData, number)
+                    replyString += hitomila.generateReplyString(processedData, number, censorshipLevel)
                     if processedData[len(processedData)-1]:
                         isRedacted = True
         if replyString:
             if comment.subreddit in REDACTED_INFO_SUBS and isRedacted:
-                header = "YOUR QUERY LEADS TO LOLI/SHOTA.\n\nThis violates Animemes rule 7.2. You are advised to edit your comment to remove the number(s) before it gets deleted.\n\nI'm sorry, this bot is currently being updated to make its loli/shota response is rule compliant, thank you for your patience.\n\n"
-                replyString = header #+ replyString
+                header = "YOUR QUERY LEADS TO LOLI/SHOTA.\n\nThis violates Animemes rule 7.2. You are advised to edit your comment to remove the number(s) before it gets deleted.\n\n&#x200B;\n\n"
+                replyString = header + replyString
             replyString += addFooter()
             messagesRepliedTo.append(writeCommentReply(replyString, comment))
         # required for message reply mark read
