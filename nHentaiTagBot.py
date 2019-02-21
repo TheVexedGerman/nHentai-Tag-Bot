@@ -36,7 +36,7 @@ messagesRepliedTo = []
 
 def addFooter():
     # Needs to use ASCII code to not break reddit formatting &#32; is space &#40; is ( and &#41; is )
-    return "---\n\n^&#40;nHentai&#41;,&#32;&#41;Tsumino&#40;,&#32;}e-hentai/token{&#32;|&#32;!hitomi.la!&#32;|&#32;min&#32;5&#32;digits&#32;|&#32;[Contact](https://www.reddit.com/message/compose/?to=thevexedgerman&subject=[nHentai-Bot])&#32;|&#32;[Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)"
+    return "---\n\n^&#40;nHentai&#41;,&#32;&#41;Tsumino&#40;,&#32;}e-hentai/token{,&#32;!hitomi.la!&#32;|&#32;min&#32;5&#32;digits&#32;|&#32;[Contact](https://www.reddit.com/message/compose/?to=thevexedgerman&subject=[nHentai-Bot])&#32;|&#32;[Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)"
 
 
 def authenticate():
@@ -207,8 +207,8 @@ def processComment(comment):
                         isRedacted = True
         if replyString:
             if comment.subreddit in REDACTED_INFO_SUBS and isRedacted:
-                header = "YOUR QUERY LEADS TO LOLI/SHOTA.\n\nThis violates Animemes rule 7.2. You are advised to edit your comment to remove the number(s) before it gets deleted.\n\n&#x200B;\n\n"
-                replyString = header + replyString
+                header = "YOUR QUERY LEADS TO LOLI/SHOTA.\n\nThis violates Animemes rule 7.2. You are advised to edit your comment to remove the number(s) before it gets deleted.\n\nI'm sorry, this bot is currently being updated to make its loli/shota response is rule compliant, thank you for your patience.\n\n"
+                replyString = header #+ replyString
             replyString += addFooter()
             messagesRepliedTo.append(writeCommentReply(replyString, comment))
         # required for message reply mark read
