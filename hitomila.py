@@ -116,7 +116,7 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
                 return replyString
             if processedData[0] == 404:
                 replyString += "This gallery is returning a 404. The gallery has either been removed or doesn't exist yet."
-                
+
         if processedData[isRedacted] and censorshipLevel > 1:
             processedData[title] = "[REDACTED]"
             processedData[artist] = "[REDACTED]"
@@ -148,7 +148,7 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
     return replyString
 
 def getNumbers(comment):
-    numbers = re.findall(r'(?<=\!)\d{5,8}(?=\!)', comment)
+    numbers = re.findall(r'(?<=(?<!\>)\!)\d{5,8}(?=\!(?!\<))', comment)
     try:
         numbers = [int(number) for number in numbers]
     except ValueError:
