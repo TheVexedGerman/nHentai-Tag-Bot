@@ -95,11 +95,42 @@ def generateReplyString(processedData, galleryNumberAndToken, censorshipLevel=0)
     replyString = ""
 
     if processedData:
-        if processedData[isRedacted] and censorshipLevel > 1:
-            processedData[title] = "[REDACTED]"
-            processedData[artist] = ["[REDACTED]"]
-
+        #Censorship engine
         if processedData[isRedacted]:
+            #Level 2
+            if censorshipLevel > 1:
+                if processedData[title]:
+                    processedData[title] = "[REDACTED]"
+                if processedData[artist]:
+                    processedData[artist] = ["[REDACTED]" for element in processedData[artist]]
+                if processedData[group]:
+                    processedData[group] = ["[REDACTED]" for element in processedData[group]]
+            #Level 3
+            if censorshipLevel > 2:
+                if processedData[parody]:
+                    processedData[parody] = ["[REDACTED]" for element in processedData[parody]]
+                if processedData[character]:
+                    processedData[character] = ["[REDACTED]" for element in processedData[character]]
+            #Level 4
+            if censorshipLevel > 3:
+                if processedData[male]:
+                    processedData[male] = ["[REDACTED]" if "shota" not in element else element for element in processedData[male]]
+                if processedData[female]:
+                    processedData[female] = ["[REDACTED]" if "loli" not in element else element for element in processedData[female]]
+                if processedData[misc]:
+                    processedData[misc] = ["[REDACTED]" for element in processedData[misc]]
+            #Level 5
+            if censorshipLevel > 4:
+                if processedData[numberOfPages]:
+                    processedData[numberOfPages] = "[REDACTED]"
+                if processedData[rating]:
+                    processedData[rating] = "[REDACTED]"
+                if processedData[category]:
+                    processedData[category] = "[REDACTED]"
+                if processedData[language]:
+                    processedData[language] = "[REDACTED]"
+
+        if processedData[isRedacted] and censorshipLevel > 0:
             replyString += ">E-Hentai: [REDACTED]\n\n"
         else:
             replyString += ">E-Hentai: " + str(galleryNumberAndToken[0]) + "/" + str(galleryNumberAndToken[1]) + "\n\n"

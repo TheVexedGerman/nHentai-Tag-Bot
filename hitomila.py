@@ -117,11 +117,38 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
             if processedData[0] == 404:
                 replyString += "This gallery is returning a 404. The gallery has either been removed or doesn't exist yet."
 
-        if processedData[isRedacted] and censorshipLevel > 1:
-            processedData[title] = "[REDACTED]"
-            processedData[artist] = "[REDACTED]"
-
+        #Censorship engine
         if processedData[isRedacted]:
+            #Level 2
+            if censorshipLevel > 1:
+                if processedData[artist]:
+                    processedData[artist] = "[REDACTED]"
+                if processedData[title]:
+                    processedData[title] = "[REDACTED]"
+                if processedData[group]:
+                    processedData[group] = ["[REDACTED]" for element in processedData[group]]
+            #Level 3
+            if censorshipLevel > 2:
+                if processedData[series]:
+                    processedData[series] = ["[REDACTED]" for element in processedData[series]]
+                if processedData[characters]:
+                    processedData[characters] = ["[REDACTED]" for element in processedData[characters]]
+            #Level 4
+            if censorshipLevel > 3:
+                if processedData[tags]:
+                    processedData[tags] = ["[REDACTED]" if not any(tag in element.lower() for tag in ['loli','shota']) else element for element in processedData[tags]]
+            #Level 5
+            if censorshipLevel > 4:
+                if processedData[pages] > 0:
+                    processedData[pages] = 0
+                if processedData[types]:
+                    processedData[types] = ["[REDACTED]" for element in processedData[types]]
+                if processedData[language]:
+                    processedData[language] = ["[REDACTED]" for element in processedData[language]]
+
+
+
+        if processedData[isRedacted] and censorshipLevel > 0:
             replyString += ">Hitomi.la: [REDACTED]\n\n"
         else:
             replyString += ">Hitomi.la: " + str(galleryNumber).zfill(5) + "\n\n"

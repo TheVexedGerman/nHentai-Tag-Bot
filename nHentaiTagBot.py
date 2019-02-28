@@ -167,10 +167,10 @@ def processComment(comment):
     if comment.id not in messagesRepliedTo and comment.author.name != reddit.user.me():
         replyString = ""
         isRedacted = False
-        censorshipLevel = 0
+        censorshipLevel = 1
         numbersCombi = getNumbers(comment)
         if comment.subreddit in REDACTED_INFO_SUBS:
-            censorshipLevel = 2
+            censorshipLevel = 4
         #TODO make this more efficient
         combination = []
         i = 0

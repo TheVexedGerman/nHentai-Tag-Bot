@@ -137,11 +137,37 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
     print("Tsumino replyStringGenerator Start")
 
     if processedData:
-        if processedData[isRedacted] and censorshipLevel > 1:
-            processedData[title] = "[REDACTED]"
-            processedData[artist] = ["[REDACTED]"]
-            
+        #Censorship engine
         if processedData[isRedacted]:
+            #Level 2
+            if censorshipLevel > 1:
+                # processedData[etc] = ["[REDACTED]" for element in processedData[etc]]
+                if processedData[title]:
+                    processedData[title] = "[REDACTED]"
+                if processedData[artist]:
+                    processedData[artist] = ["[REDACTED]" for element in processedData[artist]]
+                if processedData[group]:
+                    processedData[group] = ["[REDACTED]" for element in processedData[group]]
+            #Level 3
+            if censorshipLevel > 2:
+                if processedData[collection]:
+                    processedData[collection] = ["[REDACTED]" for element in processedData[collection]]
+                if processedData[parody]:
+                    processedData[parody] = ["[REDACTED]" for element in processedData[parody]]
+            #Level 4
+            if censorshipLevel > 3:
+                if processedData[tag]:
+                    processedData[tag] = ["[REDACTED]" if not any(tags in element.lower() for tags in ['loli','shota']) else element for element in processedData[tag]]
+            #Level 5
+            if censorshipLevel > 4:
+                if processedData[pages]:
+                    processedData[pages] = "[REDACTED]"  
+                if processedData[rating]:
+                    processedData[rating] = "[REDACTED]"
+                if processedData[category]:
+                    processedData[category] = ["[REDACTED]" for element in processedData[category]]
+
+        if processedData[isRedacted] and censorshipLevel > 0:
             replyString += ">Tsumino: [REDACTED]\n\n"
         else:
             replyString += ">Tsumino: " + str(galleryNumber).zfill(5) + "\n\n"

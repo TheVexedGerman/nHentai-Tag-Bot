@@ -83,13 +83,41 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
         replyString += "nHentai returned 404 for this number. The gallery has either been removed or doesn't exist yet.\n\n"
         return replyString
     if processedData[title]:
-        if processedData[isRedacted] and censorshipLevel > 1:
-            processedData[title] = "[REDACTED]"
-            artistReplacement = processedData[artists]
-            inner = artistReplacement[0]
-            processedData[artists] = [["[REDACTED]", inner[1]]]
-            
+        #Censorship engine
         if processedData[isRedacted]:
+            #Level 2
+            if censorshipLevel > 1:
+                processedData[title] = "[REDACTED]"
+                if processedData[artists]:
+                    for element in processedData[artists]:
+                        element[0] = "[REDACTED]"
+                if processedData[groups]:
+                    for element in processedData[groups]:
+                        element[0] = "[REDACTED]"
+            #Level 3
+            if censorshipLevel > 2:
+                if processedData[characters]:
+                    for element in processedData[characters]:
+                        element[0] = "[REDACTED]"
+                if processedData[parodies]:
+                    for element in processedData[parodies]:
+                        element[0] = "[REDACTED]"
+            #Level 4
+            if censorshipLevel > 3:
+                if processedData[listOfTags]:
+                    for element in processedData[listOfTags]:
+                        if not any(tag in element[0] for tag in ['loli','shota']):
+                            element[0] = "[REDACTED]"
+            #Level 5
+            if censorshipLevel > 4:
+                if processedData[languages]:
+                    for element in processedData[languages]:
+                        element[0] = "[REDACTED]"
+                if processedData[categories]:
+                    for element in processedData[categories]:
+                        element[0] = "[REDACTED]"
+                processedData[numberOfPages] = "[REDACTED]"
+        if processedData[isRedacted] and censorshipLevel > 0:
             replyString += ">[REDACTED]\n\n"
         else:
             replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
