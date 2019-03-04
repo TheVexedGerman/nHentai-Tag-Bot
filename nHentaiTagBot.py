@@ -380,14 +380,11 @@ def processCommentReply(comment):
             replyString += "You have been PM'd the links to the numbers above.\n\n"
         else:
             replyString += "Redaction prevents link generation. If there are numbers beside the redacted ones a link has been PM'd to you.\n\n"
-        if (redacted and (nhentaiNumbers or tsuminoNumbers or ehentaiNumbers)) or not redacted:
-            replyString += "If you also want to receive the link [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]) +")\n\n"
+        if (redacted and (nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or hitomilaNumbers)) or not redacted:
+            replyString += "This is the first and **only** link comment I will respond to for this request to prevent clutter, if you'd also like to receive the link please [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]) +")\n\n"
         replyString += "---\n\n"
-        replyString += "^(Please be aware that this action will only be performed for the first !links reply to each comment.)\n\n"
         subReplyString = ""
-        subReplyString += "^^Subsequent requests have to use the message link.\n\n"
-        subReplyString += "^^It appears that the official reddit app has issues handling pre-formatted PM links. Consider using an alternative app or submitting an issue to reddit.\n\n"
-        subReplyString += "^^To manually get the link PM with the title **[Link]** and the body containing the number in the appropriate parentheses.\n\n"
+        subReplyString += "^Note: It seems like the official reddit app has issues handling pre-formatted PM links: if the above link leads you to a blank message form, you'll have to fill the fields in manually with `[Link]` as the subject and the numbers in brackets " + generateManualInfo([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]) + ".\n\n"
         replyString += re.sub(r' ', '&#32;', subReplyString)
         print(linkString)
         print(replyString)
@@ -452,11 +449,54 @@ def generateReplyLink(numbersCombi):
     return replyString
 
 
-if __name__ == '__main__':
-    while True:
-        try:
-            main()
-        except Exception as e:
-            pass
+def generateManualInfo(numbersCombi):
+    #TODO, use string replacement to use this function with the link generator
+    replyString = ""
+    if numbersCombi[nhentaiKey]:
+        i = 0
+        numbers = numbersCombi[nhentaiKey]
+        length = len(numbers) - 1
+        for number in numbers:
+            replyString += '`(' + str(number).zfill(5) + ')`'
+            if length != i or numbersCombi[tsuminoKey] or numbersCombi[ehentaiKey] or numbersCombi[hitomilaKey]:
+                replyString += ' '
+            i += 1
+    if numbersCombi[tsuminoKey]:
+        i = 0
+        numbers = numbersCombi[tsuminoKey]
+        length = len(numbers) - 1
+        for number in numbers:
+            replyString += '`)' + str(number).zfill(5) + '(`'
+            if length != i or numbersCombi[ehentaiKey] or numbersCombi[hitomilaKey]:
+                replyString += ' '
+            i += 1
+    if numbersCombi[ehentaiKey]:
+        i = 0
+        numbers = numbersCombi[ehentaiKey]
+        length = len(numbers) - 1
+        for number in numbers:
+            replyString += '`}' + str(number[0]) + '/' + str(number[1]) + '{`'
+            if length != i or numbersCombi[hitomilaKey]:
+                replyString += ' '
+            i += 1
+    if numbersCombi[hitomilaKey]:
+        i = 0
+        numbers = numbersCombi[hitomilaKey]
+        length = len(numbers) - 1
+        for number in numbers:
+            replyString += '`!' + str(number).zfill(5) + '!`'
+            if length != i:
+                replyString += ' '
+            i += 1
+    return replyString
 
-# main()
+
+
+# if __name__ == '__main__':
+#     while True:
+#         try:
+#             main()
+#         except Exception as e:
+#             pass
+
+main()
