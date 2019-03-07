@@ -191,23 +191,27 @@ def processComment(comment):
                 if key == nhentaiKey:
                     processedData = nhentai.analyseNumber(number)
                     replyString += nhentai.generateReplyString(processedData, number, censorshipLevel)
-                    if processedData[-1]:
-                        isRedacted = True
+                    if len(processedData) > 1:
+                        if processedData[-1]:
+                            isRedacted = True
                 elif key == tsuminoKey:
                     processedData = tsumino.analyseNumber(number)
                     replyString += tsumino.generateReplyString(processedData, number, censorshipLevel)
-                    if processedData[-1]:
-                        isRedacted = True
+                    if len(processedData) > 1:
+                        if processedData[-1]:
+                            isRedacted = True
                 elif key == ehentaiKey:
                     processedData = ehentai.analyseNumber(number)
                     replyString += ehentai.generateReplyString(processedData, number, censorshipLevel)
-                    if processedData[-1]:
-                        isRedacted = True
+                    if len(processedData) > 1:
+                        if processedData[-1]:
+                            isRedacted = True
                 elif key == hitomilaKey:
                     processedData = hitomila.analyseNumber(number)
                     replyString += hitomila.generateReplyString(processedData, number, censorshipLevel)
-                    if processedData[-1]:
-                        isRedacted = True
+                    if len(processedData) > 1:
+                        if processedData[-1]:
+                            isRedacted = True
         if replyString:
             if comment.subreddit in REDACTED_INFO_SUBS and isRedacted:
                 header = "It looks like your number leads to loli and/or shota: due to the admin's crackdown on underage content the mod team is currently treating these numbers as breaking rule 7.2 as a precautionary measure to protect the sub from admin intervention, and as such I can only provide extremely limited information.\n\n&#x200B;\n\n"
