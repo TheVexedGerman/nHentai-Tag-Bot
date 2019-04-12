@@ -4,6 +4,7 @@ import commentpy
 import requests
 import json
 import re
+import time
 
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
 API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/'
@@ -147,7 +148,9 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
 def getJSON(galleryNumber):
     if galleryNumber < 300000:
         galleryNumber = str(galleryNumber)
-        request = requests.get(LINK_URL_NHENTAI+galleryNumber) # ['tags'] #
+        request = getRequest(galleryNumber) # ['tags'] #
+        if request == None:
+            return []
         if request.status_code == 404:
             return [404]
         nhentaiTags = json.loads(re.search(r'(?<=N.gallery\().*(?=\))', request.text).group(0))
@@ -159,6 +162,15 @@ def getJSON(galleryNumber):
     else:
         return []
 
+
+def getRequest(galleryNumber):
+    for i in range(1, 5):
+        request = requests.get(LINK_URL_NHENTAI+galleryNumber) # ['tags'] #
+        if request.status_code == 200 or request.status_code == 404:
+            return request
+        time.sleep(i)
+    return None
+
 def getNumbers(comment):
     numbers = re.findall(r'(?<=\()\d{5,6}(?=\))', comment)
     try:
@@ -167,6 +179,7 @@ def getNumbers(comment):
         numbers = []
     numbers = commentpy.removeDuplicates(numbers)
     return numbers
+
 
 def scanURL(comment):
     nhentaiNumbers = []
