@@ -148,21 +148,18 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
 
 
 def getJSON(galleryNumber):
-    if galleryNumber < 300000:
-        galleryNumber = str(galleryNumber)
-        request = getRequest(galleryNumber) # ['tags'] #
-        if request == None:
-            return []
-        if request.status_code == 404:
-            return [404]
-        nhentaiTags = json.loads(re.search(r'(?<=N.gallery\().*(?=\))', request.text).group(0))
-        # nhentaiTags = request.json()
-        if "error" in nhentaiTags:
-            return []
-        else:
-            return nhentaiTags
-    else:
+    galleryNumber = str(galleryNumber)
+    request = getRequest(galleryNumber) # ['tags'] #
+    if request == None:
         return []
+    if request.status_code == 404:
+        return [404]
+    nhentaiTags = json.loads(re.search(r'(?<=N.gallery\().*(?=\))', request.text).group(0))
+    # nhentaiTags = request.json()
+    if "error" in nhentaiTags:
+        return []
+    else:
+        return nhentaiTags
 
 
 def getRequest(galleryNumber):
