@@ -142,6 +142,8 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
         #Censorship engine
         if processedData[isRedacted]:
             #Level 2
+            if censorshipLevel > 5:
+                return ""
             if censorshipLevel > 1:
                 # processedData[etc] = ["[REDACTED]" for element in processedData[etc]]
                 if processedData[title]:

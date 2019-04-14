@@ -170,7 +170,7 @@ def processComment(comment):
         censorshipLevel = 1
         numbersCombi = getNumbers(comment)
         if comment.subreddit in REDACTED_INFO_SUBS:
-            censorshipLevel = 4
+            censorshipLevel = 6
         #TODO make this more efficient
         combination = []
         i = 0
@@ -213,9 +213,9 @@ def processComment(comment):
                         if processedData[-1]:
                             isRedacted = True
         if replyString:
-            if comment.subreddit in REDACTED_INFO_SUBS and isRedacted:
-                header = "It looks like your number leads to loli and/or shota: due to the admin's crackdown on underage content the mod team is currently treating these numbers as breaking rule 7.2 as a precautionary measure to protect the sub from admin intervention, and as such I can only provide extremely limited information.\n\n&#x200B;\n\n"
-                replyString = header + replyString
+            # if comment.subreddit in REDACTED_INFO_SUBS and isRedacted:
+            #     header = "It looks like your number leads to loli and/or shota: due to the admin's crackdown on underage content the mod team is currently treating these numbers as breaking rule 7.2 as a precautionary measure to protect the sub from admin intervention, and as such I can only provide extremely limited information.\n\n&#x200B;\n\n"
+            #     replyString = header + replyString
             replyString += addFooter()
             messagesRepliedTo.append(writeCommentReply(replyString, comment))
         # required for message reply mark read
