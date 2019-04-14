@@ -166,6 +166,7 @@ def getSavedLinkedMessages():
 def processComment(comment):
     if comment.id not in messagesRepliedTo and comment.author.name != reddit.user.me():
         replyString = ""
+        logString = ""
         isRedacted = False
         censorshipLevel = 1
         numbersCombi = getNumbers(comment)
@@ -182,33 +183,39 @@ def processComment(comment):
         if combination:
             if len(combination) > 5:
                 replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
+                logString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
             combination = combination[:5]
             for entry in combination:
                 if replyString:
                     replyString += "&#x200B;\n\n"
+                    logString += "&#x200B;\n\n"
                 number = entry[0]
                 key = entry[1]
                 if key == nhentaiKey:
                     processedData = nhentai.analyseNumber(number)
                     replyString += nhentai.generateReplyString(processedData, number, censorshipLevel)
+                    logString += nhentai.generateReplyString(processedData, number)
                     if len(processedData) > 1:
                         if processedData[-1]:
                             isRedacted = True
                 elif key == tsuminoKey:
                     processedData = tsumino.analyseNumber(number)
                     replyString += tsumino.generateReplyString(processedData, number, censorshipLevel)
+                    logString += tsumino.generateReplyString(processedData, number)
                     if len(processedData) > 1:
                         if processedData[-1]:
                             isRedacted = True
                 elif key == ehentaiKey:
                     processedData = ehentai.analyseNumber(number)
                     replyString += ehentai.generateReplyString(processedData, number, censorshipLevel)
+                    logString += ehentai.generateReplyString(processedData, number)
                     if len(processedData) > 1:
                         if processedData[-1]:
                             isRedacted = True
                 elif key == hitomilaKey:
                     processedData = hitomila.analyseNumber(number)
                     replyString += hitomila.generateReplyString(processedData, number, censorshipLevel)
+                    logString += hitomila.generateReplyString(processedData, number)
                     if len(processedData) > 1:
                         if processedData[-1]:
                             isRedacted = True
@@ -219,8 +226,14 @@ def processComment(comment):
             replyString += addFooter()
             messagesRepliedTo.append(writeCommentReply(replyString, comment))
         # required for message reply mark read
+        if logString:
+            logRequest(logString, comment)
         return True
 
+
+def logRequest(replyString, comment):
+    with open("requestHistory.csv", "a", encoding="UTF-8") as f:
+        f.write(f""""{comment.id}","https://reddit.com{comment.permalink}?context=1000","{comment.body}","{replyString}","{comment.author}"\n""")
 
 
 def processPMs(reddit):
