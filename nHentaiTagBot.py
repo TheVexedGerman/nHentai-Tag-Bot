@@ -25,9 +25,13 @@ PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-B
 REDACTED_INFO_SUBS_LV6 = ['Animemes']
 REDACTED_INFO_SUBS_ERROR = ['HentaiSource']
 USE_LINKS_SUBS = []
-NUMBERS_ALLOWED_SUBS = []
+NUMBERS_ALLOWED_SUBS = ['HentaiSource']
+
 # PARSED_SUBREDDIT = 'loli_tag_bot'
-# REDACTED_INFO_SUBS = ['loli_tag_bot']
+# REDACTED_INFO_SUBS_LV6 = ['loli_tag_bot']
+# REDACTED_INFO_SUBS_ERROR = ['loli_tag_bot']
+# USE_LINKS_SUBS = ['loli_tag_bot']
+# NUMBERS_ALLOWED_SUBS = ['loli_tag_bot']
 
 nhentaiKey = 0
 tsuminoKey = 1
@@ -338,10 +342,15 @@ def processCommentReply(comment):
             parentComment = parentComment.body
 
             # Remove restricted numbers
-            redacted = re.findall(r'&#32;', parentComment)
-            parentComment = re.sub(r'(?<=>).*?(?=&#32;)', '', parentComment)
-
+            # Remove already existing links
+            parentComment = re.sub(r'\[.*?\]\(.*?\)', '', parentComment)
             print(parentComment)
+            redacted = re.findall(r'&#32;\n\n', parentComment)
+            print(redacted)
+            parentComment = re.sub(r'(?<=>).*?(?=&#32;\n\n)', '', parentComment)
+
+
+            # print(parentComment)
 
             tsuminoNumbers = re.findall(r'(?<=>Tsumino: )\d{5,6}', parentComment)
             try:
@@ -350,7 +359,7 @@ def processCommentReply(comment):
                 tsuminoNumbers = []
             parentComment = re.sub(r'(?<=>Tsumino: )\d{5,6}', '', parentComment)
             print(tsuminoNumbers)
-            print(parentComment)
+            # print(parentComment)
 
 
             ehentaiNumbersCandidates = re.findall(r'(?<=>E-Hentai: )\d{1,8}\/\w*', parentComment)
@@ -365,7 +374,7 @@ def processCommentReply(comment):
 
             parentComment = re.sub(r'(?<=>E-Hentai: )\d{1,8}\/\w*', '', parentComment)
             print(ehentaiNumbers)
-            print(parentComment)
+            # print(parentComment)
 
             hitomilaNumbers = re.findall(r'(?<=>Hitomi.la: )\d{5,8}', parentComment)
             try:
@@ -383,7 +392,8 @@ def processCommentReply(comment):
                 nhentaiNumbers = []
 
             redacted += re.findall(r'\[REDACTED\]', parentComment)
-            redacted = [True for entry in redacted]
+            if redacted:
+                redacted = [True]
     if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or hitomilaNumbers or redacted:
         numberOfInts = len(nhentaiNumbers)+len(tsuminoNumbers)+len(ehentaiNumbers)+len(hitomilaNumbers)
         if numberOfInts > 0:
@@ -395,13 +405,14 @@ def processCommentReply(comment):
         if not redacted:
             replyString += "You have been PM'd the links to the numbers above.\n\n"
         else:
-            replyString += "Redaction prevents link generation. If there are numbers beside the redacted ones a link has been PM'd to you.\n\n"
+            replyString += "Restricted numbers don't get links. If there are unresticted numbers a link has been PM'd to you.\n\n"
         if (redacted and (nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or hitomilaNumbers)) or not redacted:
             replyString += "This is the first and **only** link comment I will respond to for this request to prevent clutter, if you'd also like to receive the link please [click here]("+ generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]) +")\n\n"
-        replyString += "---\n\n"
-        subReplyString = ""
-        subReplyString += "^Note: It seems like the official reddit app has issues handling pre-formatted PM links: if the above link leads you to a blank message form, you'll have to fill the fields in manually with `[Link]` as the subject and the numbers in brackets " + generateManualInfo([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]) + ".\n\n"
-        replyString += re.sub(r' ', '&#32;', subReplyString)
+        if not redacted:
+            replyString += "---\n\n"
+            subReplyString = ""
+            subReplyString += "^Note: It seems like the official reddit app has issues handling pre-formatted PM links: if the above link leads you to a blank message form, you'll have to fill the fields in manually with `[Link]` as the subject and the numbers in brackets " + generateManualInfo([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]) + ".\n\n"
+            replyString += re.sub(r' ', '&#32;', subReplyString)
         print(linkString)
         print(replyString)
     if linkString and replyString:
