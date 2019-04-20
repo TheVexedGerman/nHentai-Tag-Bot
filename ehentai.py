@@ -67,7 +67,7 @@ def analyseNumber(galleryNumberAndToken):
     return [title, numberOfPages, category, rating, artist, character, female, group, language, male, parody, misc, isRedacted]
 
 
-def generateReplyString(processedData, galleryNumberAndToken, censorshipLevel=0):
+def generateReplyString(processedData, galleryNumberAndToken, censorshipLevel=0, useError=False, generateLink=False):
     # Title
     # number of pages
     # rating
@@ -134,8 +134,16 @@ def generateReplyString(processedData, galleryNumberAndToken, censorshipLevel=0)
                 if processedData[language]:
                     processedData[language] = "[REDACTED]"
 
-        if processedData[isRedacted] and censorshipLevel > 0:
-            replyString += ">E-Hentai: [REDACTED]\n\n"
+        if processedData[isRedacted]:
+            if censorshipLevel > 0:
+                replyString += ">E-Hentai: [REDACTED]\n\n"
+            else:
+                replyString += f">E-Hentai: {galleryNumberAndToken[0]}/{galleryNumberAndToken[1]}&#32;\n\n"
+                if useError:
+                    replyString += f"{commentpy.generate450string('E-Hentai')}\n\n"
+                    return replyString
+        elif generateLink:
+            replyString += f">E-Hentai: [{galleryNumberAndToken[0]}/{galleryNumberAndToken[1]}]({LINK_URL_EHENTAI}{galleryNumberAndToken[0]}/{galleryNumberAndToken[1]})\n\n"
         else:
             replyString += ">E-Hentai: " + str(galleryNumberAndToken[0]) + "/" + str(galleryNumberAndToken[1]) + "\n\n"
         if processedData[title]:

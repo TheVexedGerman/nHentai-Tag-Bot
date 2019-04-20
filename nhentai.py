@@ -62,7 +62,7 @@ def analyseNumber(galleryNumber):
     # print(processedData)
     return processedData
 
-def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
+def generateReplyString(processedData, galleryNumber, censorshipLevel=0, useError=False, generateLink=False):
     # parodies
     # characters
     # tags
@@ -122,10 +122,19 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
                     for element in processedData[categories]:
                         element[0] = "[REDACTED]"
                 processedData[numberOfPages] = "[REDACTED]"
-        if processedData[isRedacted] and censorshipLevel > 0:
-            replyString += ">[REDACTED]\n\n"
+        if processedData[isRedacted]:
+            if censorshipLevel > 0:
+                replyString += ">[REDACTED]\n\n"
+            else:
+                replyString += f">{str(galleryNumber).zfill(5)}&#32;\n\n"
+                if useError:
+                    replyString += f"{commentpy.generate450string('nHentai')}\n\n"
+                    return replyString
+        elif generateLink:
+            replyString += f">[{str(galleryNumber).zfill(5)}]({LINK_URL_NHENTAI}{galleryNumber})\n\n"
         else:
             replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
+
         replyString += "**Title**: " + processedData[title] + "\n\n"
         replyString += "**Number of pages**: " + str(processedData[numberOfPages]) + "\n\n"
         

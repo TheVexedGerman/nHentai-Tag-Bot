@@ -22,7 +22,10 @@ LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
 PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource+CroppedHentaiMemes+hentaimemes'
-REDACTED_INFO_SUBS = ['Animemes']
+REDACTED_INFO_SUBS_LV6 = ['Animemes']
+REDACTED_INFO_SUBS_ERROR = ['HentaiSource']
+USE_LINKS_SUBS = []
+NUMBERS_ALLOWED_SUBS = []
 # PARSED_SUBREDDIT = 'loli_tag_bot'
 # REDACTED_INFO_SUBS = ['loli_tag_bot']
 
@@ -167,11 +170,18 @@ def processComment(comment):
     if comment.id not in messagesRepliedTo and comment.author.name != reddit.user.me():
         replyString = ""
         logString = ""
-        isRedacted = False
+        useError = False
+        useLink = False
         censorshipLevel = 1
         numbersCombi = getNumbers(comment)
-        if comment.subreddit in REDACTED_INFO_SUBS:
+        if comment.subreddit in REDACTED_INFO_SUBS_LV6:
             censorshipLevel = 6
+        if comment.subreddit in REDACTED_INFO_SUBS_ERROR:
+            useError = True
+        if comment.subreddit in USE_LINKS_SUBS:
+            useLink = True
+        if comment.subreddit in NUMBERS_ALLOWED_SUBS:
+            censorshipLevel = 0
         #TODO make this more efficient
         combination = []
         i = 0
@@ -193,36 +203,21 @@ def processComment(comment):
                 key = entry[1]
                 if key == nhentaiKey:
                     processedData = nhentai.analyseNumber(number)
-                    replyString += nhentai.generateReplyString(processedData, number, censorshipLevel)
+                    replyString += nhentai.generateReplyString(processedData, number, censorshipLevel, useError, useLink)
                     logString += nhentai.generateReplyString(processedData, number)
-                    if len(processedData) > 1:
-                        if processedData[-1]:
-                            isRedacted = True
                 elif key == tsuminoKey:
                     processedData = tsumino.analyseNumber(number)
-                    replyString += tsumino.generateReplyString(processedData, number, censorshipLevel)
+                    replyString += tsumino.generateReplyString(processedData, number, censorshipLevel, useError, useLink)
                     logString += tsumino.generateReplyString(processedData, number)
-                    if len(processedData) > 1:
-                        if processedData[-1]:
-                            isRedacted = True
                 elif key == ehentaiKey:
                     processedData = ehentai.analyseNumber(number)
-                    replyString += ehentai.generateReplyString(processedData, number, censorshipLevel)
+                    replyString += ehentai.generateReplyString(processedData, number, censorshipLevel, useError, useLink)
                     logString += ehentai.generateReplyString(processedData, number)
-                    if len(processedData) > 1:
-                        if processedData[-1]:
-                            isRedacted = True
                 elif key == hitomilaKey:
                     processedData = hitomila.analyseNumber(number)
-                    replyString += hitomila.generateReplyString(processedData, number, censorshipLevel)
+                    replyString += hitomila.generateReplyString(processedData, number, censorshipLevel, useError, useLink)
                     logString += hitomila.generateReplyString(processedData, number)
-                    if len(processedData) > 1:
-                        if processedData[-1]:
-                            isRedacted = True
         if replyString:
-            # if comment.subreddit in REDACTED_INFO_SUBS and isRedacted:
-            #     header = "It looks like your number leads to loli and/or shota: due to the admin's crackdown on underage content the mod team is currently treating these numbers as breaking rule 7.2 as a precautionary measure to protect the sub from admin intervention, and as such I can only provide extremely limited information.\n\n&#x200B;\n\n"
-            #     replyString = header + replyString
             replyString += addFooter()
             messagesRepliedTo.append(writeCommentReply(replyString, comment))
         # required for message reply mark read
@@ -342,6 +337,10 @@ def processCommentReply(comment):
             parent = parentComment
             parentComment = parentComment.body
 
+            # Remove restricted numbers
+            redacted = re.findall(r'&#32;', parentComment)
+            parentComment = re.sub(r'(?<=>).*?(?=&#32;)', '', parentComment)
+
             print(parentComment)
 
             tsuminoNumbers = re.findall(r'(?<=>Tsumino: )\d{5,6}', parentComment)
@@ -383,7 +382,7 @@ def processCommentReply(comment):
             except ValueError:
                 nhentaiNumbers = []
 
-            redacted = re.findall(r'\[REDACTED\]', parentComment)
+            redacted += re.findall(r'\[REDACTED\]', parentComment)
             redacted = [True for entry in redacted]
     if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or hitomilaNumbers or redacted:
         numberOfInts = len(nhentaiNumbers)+len(tsuminoNumbers)+len(ehentaiNumbers)+len(hitomilaNumbers)

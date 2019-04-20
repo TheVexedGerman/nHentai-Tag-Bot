@@ -19,6 +19,9 @@ def additionalTagsString(entries, initialText, isNhentai=True):
     return replyString
 
 
+def generate450string(site):
+    return f"{site} returned 450 for this number. The gallery information is currently unavailable.\n\n"
+
 # taken from https://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-whilst-preserving-order
 def removeDuplicates(seq):
     seen = set()

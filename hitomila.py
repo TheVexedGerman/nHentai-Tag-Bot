@@ -97,7 +97,7 @@ def analyseNumber(galleryNumber):
     else:
         return []
 
-def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
+def generateReplyString(processedData, galleryNumber, censorshipLevel=0, useError=False, generateLink=False):
     title = 0
     pages = 1
     artist = 2
@@ -152,8 +152,16 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
 
 
 
-        if processedData[isRedacted] and censorshipLevel > 0:
-            replyString += ">Hitomi.la: [REDACTED]\n\n"
+        if processedData[isRedacted]:
+            if censorshipLevel > 0:
+                replyString += ">Hitomi.la: [REDACTED]\n\n"
+            else:
+                replyString += f">Hitomi.la: {str(galleryNumber).zfill(5)}&#32;\n\n"
+                if useError:
+                    replyString += f"{commentpy.generate450string('E-Hentai')}\n\n"
+                    return replyString
+        elif generateLink:
+            replyString += f">Hitomi.la: [{str(galleryNumber).zfill(5)}]({API_URL_HITOMILA}{galleryNumber}.html)\n\n"
         else:
             replyString += ">Hitomi.la: " + str(galleryNumber).zfill(5) + "\n\n"
 

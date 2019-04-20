@@ -110,7 +110,7 @@ def analyseNumber(galleryNumber):
         return []
 
 
-def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
+def generateReplyString(processedData, galleryNumber, censorshipLevel=0, useError=False, generateLink=False):
     # Title
     # Uploader (Rejected)
     # Uploaded (Rejected)
@@ -171,8 +171,16 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0):
                 if processedData[category]:
                     processedData[category] = ["[REDACTED]" for element in processedData[category]]
 
-        if processedData[isRedacted] and censorshipLevel > 0:
-            replyString += ">Tsumino: [REDACTED]\n\n"
+        if processedData[isRedacted]:
+            if censorshipLevel > 0:
+                replyString += ">Tsumino: [REDACTED]\n\n"
+            else:
+                replyString += f">Tsumino: {str(galleryNumber).zfill(5)}&#32;\n\n"
+                if useError:
+                    replyString += f"{commentpy.generate450string('E-Hentai')}\n\n"
+                    return replyString
+        elif generateLink:
+            replyString += f">Tsumino: [{str(galleryNumber).zfill(5)}]({API_URL_TSUMINO}{galleryNumber})\n\n"
         else:
             replyString += ">Tsumino: " + str(galleryNumber).zfill(5) + "\n\n"
         if processedData[title]:
