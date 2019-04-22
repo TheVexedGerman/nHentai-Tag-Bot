@@ -21,11 +21,12 @@ LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
-PARSED_SUBREDDIT = 'Animemes+hentai_irl+anime_irl+u_Loli-Tag-Bot+u_nHentai-Tag-Bot+HentaiSource+CroppedHentaiMemes+hentaimemes'
-REDACTED_INFO_SUBS_LV6 = ['Animemes']
-REDACTED_INFO_SUBS_ERROR = ['HentaiSource']
-USE_LINKS_SUBS = []
-NUMBERS_ALLOWED_SUBS = ['HentaiSource']
+PARSED_SUBREDDITS = ['Animemes', 'hentai_irl', 'anime_irl', 'u_Loli-Tag-Bot', 'u_nHentaiTagBot', 'HentaiSource', 'CroppedHentaiMemes', 'hentaimemes']
+PARSED_SUBREDDIT = subListToString(PARSED_SUBREDDITS)
+# REDACTED_INFO_SUBS_LV6 = ['Animemes']
+REDACTED_INFO_SUBS_ERROR = ['HentaiSource', 'Animemes']
+USE_LINKS_SUBS = PARSED_SUBREDDITS.remove('anime_irl')
+# NUMBERS_ALLOWED_SUBS = ['HentaiSource']
 
 # PARSED_SUBREDDIT = 'loli_tag_bot'
 # REDACTED_INFO_SUBS_LV6 = ['loli_tag_bot']
@@ -176,16 +177,14 @@ def processComment(comment):
         logString = ""
         useError = False
         useLink = False
-        censorshipLevel = 1
+        censorshipLevel = 0
         numbersCombi = getNumbers(comment)
-        if comment.subreddit in REDACTED_INFO_SUBS_LV6:
-            censorshipLevel = 6
+        # if comment.subreddit in REDACTED_INFO_SUBS_LV6:
+        #     censorshipLevel = 6
         if comment.subreddit in REDACTED_INFO_SUBS_ERROR:
             useError = True
         if comment.subreddit in USE_LINKS_SUBS:
             useLink = True
-        if comment.subreddit in NUMBERS_ALLOWED_SUBS:
-            censorshipLevel = 0
         #TODO make this more efficient
         combination = []
         i = 0
@@ -517,6 +516,13 @@ def generateManualInfo(numbersCombi):
             i += 1
     return replyString
 
+
+def subListToString(lst):
+    string = f'{lst[0]}'
+    for i in range(len(lst)):
+        if i > 0:
+            string += f'+{lst}'
+    return string
 
 
 if __name__ == '__main__':
