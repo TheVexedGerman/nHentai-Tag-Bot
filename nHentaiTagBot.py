@@ -46,12 +46,12 @@ def subListToString(lst):
     string = f'{lst[0]}'
     for i in range(len(lst)):
         if i > 0:
-            string += f'+{lst}'
+            string += f'+{lst[i]}'
     return string
 
 #Moved lower to have method defined
 PARSED_SUBREDDIT = subListToString(PARSED_SUBREDDITS)
-
+print(PARSED_SUBREDDIT)
 
 def addFooter():
     # Needs to use ASCII code to not break reddit formatting &#32; is space &#40; is ( and &#41; is )
