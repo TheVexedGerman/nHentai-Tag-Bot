@@ -24,7 +24,7 @@ TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 PARSED_SUBREDDITS = ['Animemes', 'hentai_irl', 'anime_irl', 'u_Loli-Tag-Bot', 'u_nHentaiTagBot', 'HentaiSource', 'CroppedHentaiMemes', 'hentaimemes']
 # REDACTED_INFO_SUBS_LV6 = ['Animemes']
 REDACTED_INFO_SUBS_ERROR = ['HentaiSource', 'Animemes']
-USE_LINKS_SUBS = PARSED_SUBREDDITS
+USE_LINKS_SUBS = PARSED_SUBREDDITS.copy()
 USE_LINKS_SUBS.remove('anime_irl')
 # NUMBERS_ALLOWED_SUBS = ['HentaiSource']
 
