@@ -158,15 +158,16 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0, useErro
 
 def getJSON(galleryNumber):
     galleryNumber = str(galleryNumber)
-    request = getRequest(galleryNumber) # ['tags'] #
+    # request = getRequest(galleryNumber) # ['tags'] #
+    request = requests.get(API_URL_NHENTAI+galleryNumber)
     if request == None:
         return []
     if request.status_code == 404:
         return [404]
-    nhentaiTags = json.loads(re.search(r'(?<=N.gallery\().*(?=\))', request.text).group(0))
-    # nhentaiTags = request.json()
+    # nhentaiTags = json.loads(re.search(r'(?<=N.gallery\().*(?=\))', request.text).group(0))
+    nhentaiTags = request.json()
     if "error" in nhentaiTags:
-        return []
+        return [404]
     else:
         return nhentaiTags
 
