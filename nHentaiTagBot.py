@@ -21,18 +21,17 @@ LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
-PARSED_SUBREDDITS = ['Animemes', 'hentai_irl', 'anime_irl', 'u_Loli-Tag-Bot', 'u_nHentaiTagBot', 'HentaiSource', 'CroppedHentaiMemes', 'hentaimemes', 'SauceSharingCommunity', 'jizzedtothisHENTAI', 'nHentaiTagBot']
+PARSED_SUBREDDITS = ['Animemes', 'hentai_irl', 'anime_irl', 'u_Loli-Tag-Bot', 'u_nHentaiTagBot', 'HentaiSource', 'CroppedHentaiMemes', 'hentaimemes', 'SauceSharingCommunity', 'jizzedtothisHENTAI', 'nHentaiTagBot', 'hentaidankmemes']
 # REDACTED_INFO_SUBS_LV6 = ['Animemes']
 REDACTED_INFO_SUBS_ERROR = ['HentaiSource', 'Animemes']
 USE_LINKS_SUBS = PARSED_SUBREDDITS.copy()
 USE_LINKS_SUBS.remove('anime_irl')
-# NUMBERS_ALLOWED_SUBS = ['HentaiSource']
 
-# PARSED_SUBREDDIT = 'loli_tag_bot'
-# REDACTED_INFO_SUBS_LV6 = ['loli_tag_bot']
-# REDACTED_INFO_SUBS_ERROR = ['loli_tag_bot']
+# PARSED_SUBREDDITS = ['loli_tag_bot']
+# # REDACTED_INFO_SUBS_LV6 = ['loli_tag_bot']
+# # REDACTED_INFO_SUBS_ERROR = ['loli_tag_bot']
+# REDACTED_INFO_SUBS_ERROR = []
 # USE_LINKS_SUBS = ['loli_tag_bot']
-# NUMBERS_ALLOWED_SUBS = ['loli_tag_bot']
 
 nhentaiKey = 0
 tsuminoKey = 1
@@ -55,7 +54,8 @@ print(PARSED_SUBREDDIT)
 
 def addFooter():
     # Needs to use ASCII code to not break reddit formatting &#32; is space &#40; is ( and &#41; is )
-    return "---\n\n^&#40;nHentai&#41;,&#32;&#41;Tsumino&#40;,&#32;}e-hentai/token{,&#32;!hitomi.la!&#32;|&#32;min&#32;5&#32;digits&#32;|&#32;[Contact](https://www.reddit.com/message/compose/?to=thevexedgerman&subject=[nHentai-Bot])&#32;|&#32;[Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)"
+    # return "---\n\n^&#40;nHentai&#41;,&#32;&#41;Tsumino&#40;,&#32;}e-hentai/token{,&#32;!hitomi.la!&#32;|&#32;min&#32;5&#32;digits&#32;|&#32;[Contact](https://www.reddit.com/message/compose/?to=thevexedgerman&subject=[nHentai-Bot])&#32;|&#32;[Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)"
+    return "---\n\n(nHentai), )Tsumino(, }e-hentai/token{, !hitomi.la! | min 5 digits | [FAQ]() | [/r/](https://www.reddit.com/r/nHentaiTagBot/) | [Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)".replace(' ', '&#32;').replace('(', '&#40;', 2).replace(')', '&#40;', 2)
 
 
 def authenticate():
