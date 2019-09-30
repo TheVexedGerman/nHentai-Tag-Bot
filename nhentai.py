@@ -5,6 +5,9 @@ import requests
 import json
 import re
 import time
+import datetime
+import psycopg2
+import postgres_credentials
 
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
 API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/'
@@ -159,17 +162,36 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0, useErro
 def getJSON(galleryNumber):
     galleryNumber = str(galleryNumber)
     # request = getRequest(galleryNumber) # ['tags'] #
+    # Fetch gallery info from cache
+    cursor.execute("SELECT * FROM nhentai WHERE (gallery_number = %s)", [galleryNumber])
+    cachedEntry = cursor.fetchone()
+    # Use cached entry if new enough (less than 7 days old)
+    if cachedEntry and ((datetime.datetime.now() - cachedEntry[1]) // datetime.timedelta(days=7)) < 1:
+        print("cache used")
+        return cachedEntry[2]
     request = requests.get(API_URL_NHENTAI+galleryNumber)
     if request == None:
-        return []
+        if cachedEntry:
+            return cachedEntry[2]
+        else:
+            return []
     if request.status_code == 404:
-        return [404]
+        if cachedEntry:
+            return cachedEntry[2]
+        else:
+            return [404]
     # nhentaiTags = json.loads(re.search(r'(?<=N.gallery\().*(?=\))', request.text).group(0))
     nhentaiTags = request.json()
     if "error" in nhentaiTags:
         return [404]
+    if cachedEntry:
+        print("update cache")
+        cursor.execute("UPDATE nhentai SET last_update = %s, json = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), request.text, int(galleryNumber)))
     else:
-        return nhentaiTags
+        print("create cache")
+        cursor.execute("INSERT INTO nhentai (gallery_number, last_update, json) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.now(), request.text))
+    db_conn.commit()
+    return nhentaiTags
 
 
 def getRequest(galleryNumber):
@@ -204,3 +226,12 @@ def scanURL(comment):
         nhentaiNumbers = []
     nhentaiNumbers = commentpy.removeDuplicates(nhentaiNumbers)
     return nhentaiNumbers
+
+db_conn = psycopg2.connect(
+    host = postgres_credentials.HOST,
+    database = postgres_credentials.DATABASE,
+    user = postgres_credentials.USER,
+    password = postgres_credentials.PASSWORD
+)
+
+cursor = db_conn.cursor()
