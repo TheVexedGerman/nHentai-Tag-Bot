@@ -4,6 +4,9 @@ import commentpy
 import requests
 import json
 import re
+import datetime
+import psycopg2
+import postgres_credentials
 from bs4 import BeautifulSoup
 
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
@@ -24,10 +27,11 @@ def analyseNumber(galleryNumber):
     collection = []
     isRedacted = False
 
-    response = requests.get(API_URL_TSUMINO+str(galleryNumber))
-    print(response)
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, features="html.parser")
+    response = getHTML(galleryNumber)
+    # response = requests.get(API_URL_TSUMINO+str(galleryNumber))
+    # print(response)
+    if response:
+        soup = BeautifulSoup(response, features="html.parser")
         # title finder
         try:
             title = soup.find('div', id="Title").string.replace('\n','')
@@ -205,6 +209,24 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0, useErro
     return replyString
 
 
+def getHTML(galleryNumber):
+    cursor.execute("SELECT * FROM tsumino WHERE (gallery_number = %s)", [galleryNumber])
+    cachedEntry = cursor.fetchone()
+    if cachedEntry and ((datetime.datetime.now() - cachedEntry[1]) // datetime.timedelta(days=7)) < 1:
+        print("cache used")
+        return cachedEntry[2]
+    response = requests.get(API_URL_TSUMINO+str(galleryNumber))
+    if response.status_code == 200:
+        if cachedEntry:
+            print("update cache")
+            cursor.execute("UPDATE tsumino SET last_update = %s, html = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), response.text, int(galleryNumber)))
+        else:
+            print("create cache")
+            cursor.execute("INSERT INTO tsumino (gallery_number, last_update, html) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.now(), response.text))
+        db_conn.commit()
+        return response.text
+
+
 def getNumbers(comment):
     numbers = re.findall(r'(?<=\))\d{5}(?=\()', comment)
     try:
@@ -231,3 +253,12 @@ def scanURL(comment):
         tsuminoNumbers = []
     tsuminoNumbers = commentpy.removeDuplicates(tsuminoNumbers)
     return tsuminoNumbers
+
+db_conn = psycopg2.connect(
+    host = postgres_credentials.HOST,
+    database = postgres_credentials.DATABASE,
+    user = postgres_credentials.USER,
+    password = postgres_credentials.PASSWORD
+)
+
+cursor = db_conn.cursor()

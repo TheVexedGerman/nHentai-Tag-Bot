@@ -4,6 +4,9 @@ import commentpy
 import requests
 import json
 import re
+import datetime
+import psycopg2
+import postgres_credentials
 from bs4 import BeautifulSoup
 
 API_URL_HITOMILA = 'https://hitomi.la/galleries/' # needs .html appended
@@ -20,11 +23,12 @@ def analyseNumber(galleryNumber):
     tags = []
     isRedacted = False
 
-    response = requests.get(API_URL_HITOMILA+str(galleryNumber)+".html")
-    if response.status_code == 404:
+    # response = requests.get(API_URL_HITOMILA+str(galleryNumber)+".html")
+    response = getHTML(galleryNumber)
+    if response == 404:
         return [404]
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, features="html.parser")
+    if response:
+        soup = BeautifulSoup(response, features="html.parser")
 
         # Check for redirect
         if soup.title.string == 'Redirect':
@@ -44,7 +48,7 @@ def analyseNumber(galleryNumber):
             print("No Artist")
 
         # Page count works by finding and counting the loaded thumbnail images
-        numbersText = re.findall(r'tn\.hitomi\.la\/smalltn\/', response.text)
+        numbersText = re.findall(r'tn\.hitomi\.la\/smalltn\/', response)
         numberOfPages = len(numbersText)
 
         # reduce scope to the different remaining categories
@@ -186,6 +190,27 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0, useErro
             replyString += commentpy.additionalTagsString(processedData[tags], "Tag", False) + "\n\n"
     return replyString
 
+
+def getHTML(galleryNumber):
+    cursor.execute("SELECT * FROM hitomila WHERE (gallery_number = %s)", [galleryNumber])
+    cachedEntry = cursor.fetchone()
+    if cachedEntry and ((datetime.datetime.now() - cachedEntry[1]) // datetime.timedelta(days=7)) < 1:
+        print("cache used")
+        return cachedEntry[2]
+    response = requests.get(API_URL_HITOMILA+str(galleryNumber)+".html")
+    if not cachedEntry and response.status_code == 404:
+        return 404
+    if response.status_code == 200:
+        if cachedEntry:
+            print("update cache")
+            cursor.execute("UPDATE hitomila SET last_update = %s, html = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), response.text, galleryNumber))
+        else:
+            print("create cache")
+            cursor.execute("INSERT INTO hitomila (gallery_number, last_update, html) VALUES (%s, %s, %s)", (galleryNumber, datetime.datetime.now(), response.text))
+        db_conn.commit()
+        return response.text
+
+
 def getNumbers(comment):
     numbers = re.findall(r'(?<=(?<!\>)\!)\d{5,8}(?=\!(?!\<))', comment)
     try:
@@ -211,3 +236,12 @@ def scanURL(comment):
         hitomilaNumbers = []
     hitomilaNumbers = commentpy.removeDuplicates(hitomilaNumbers)
     return hitomilaNumbers
+
+db_conn = psycopg2.connect(
+    host = postgres_credentials.HOST,
+    database = postgres_credentials.DATABASE,
+    user = postgres_credentials.USER,
+    password = postgres_credentials.PASSWORD
+)
+
+cursor = db_conn.cursor()

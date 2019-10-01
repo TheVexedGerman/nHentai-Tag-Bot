@@ -4,6 +4,9 @@ import commentpy
 import requests
 import json
 import re
+import datetime
+import psycopg2
+import postgres_credentials
 
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
 API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/'
@@ -12,8 +15,6 @@ LINK_URL_NHENTAI = "https://nhentai.net/g/"
 LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 
 def analyseNumber(galleryNumberAndToken):
-    galleryID = galleryNumberAndToken[0]
-    galleryToken = galleryNumberAndToken[1]
     title = ''
     numberOfPages = 0
     category = ''
@@ -28,8 +29,9 @@ def analyseNumber(galleryNumberAndToken):
     misc = []
     isRedacted = False
 
-    requestString = '{"method": "gdata","gidlist": [['+ str(galleryID) + ',' + '"' + galleryToken +'"]],"namespace": 1}'
-    ehentaiJSON = requests.post(API_URL_EHENTAI, json=json.loads(requestString)).json()
+    ehentaiJSON = getJSON(galleryNumberAndToken)
+    # requestString = '{"method": "gdata","gidlist": [['+ str(galleryID) + ',' + '"' + galleryToken +'"]],"namespace": 1}'
+    # ehentaiJSON = requests.post(API_URL_EHENTAI, json=json.loads(requestString)).json()
 
     if 'gmetadata' in ehentaiJSON:
         title = ehentaiJSON['gmetadata'][0]['title']
@@ -174,6 +176,26 @@ def generateReplyString(processedData, galleryNumberAndToken, censorshipLevel=0,
     return replyString
 
 
+def getJSON(galleryNumberAndToken):
+    galleryID = galleryNumberAndToken[0]
+    galleryToken = galleryNumberAndToken[1]
+    cursor.execute("SELECT * FROM ehentai WHERE (gallery_number = %s AND token = %s)", (galleryID, galleryToken))
+    cachedEntry = cursor.fetchone()
+    if cachedEntry and ((datetime.datetime.now() - cachedEntry[2]) // datetime.timedelta(days=7)) < 1:
+        print("cache used")
+        return cachedEntry[3]
+    requestString = '{"method": "gdata","gidlist": [['+ str(galleryID) + ',' + '"' + galleryToken +'"]],"namespace": 1}'
+    ehentaiResponse = requests.post(API_URL_EHENTAI, json=json.loads(requestString))
+    if ehentaiResponse.status_code == 200:
+        if cachedEntry:
+            print("update cache")
+            cursor.execute("UPDATE ehentai SET last_update = %s, json = %s WHERE (gallery_number = %s AND token = %s)", (datetime.datetime.now(), ehentaiResponse.text, galleryID, galleryToken))
+        else:
+            print("create cache")
+            cursor.execute("INSERT INTO ehentai (gallery_number, token, last_update, json) VALUES (%s, %s, %s, %s)", (galleryID, galleryToken, datetime.datetime.now(), ehentaiResponse.text))
+    db_conn.commit()
+    return ehentaiResponse.json()
+
 def getNumbers(comment):
     numbers = []
     candidates = re.findall(r'(?<=\})\d{1,8}\/\w*?(?=\{)', comment)
@@ -223,3 +245,12 @@ def scanURL(comment):
         print("no ehentai page Links")
     ehentaiNumbers = commentpy.removeDupes2(ehentaiNumbers)
     return ehentaiNumbers
+
+db_conn = psycopg2.connect(
+    host = postgres_credentials.HOST,
+    database = postgres_credentials.DATABASE,
+    user = postgres_credentials.USER,
+    password = postgres_credentials.PASSWORD
+)
+
+cursor = db_conn.cursor()
