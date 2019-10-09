@@ -5,6 +5,7 @@ import praw
 import re
 import time
 import datetime
+import traceback
 from bs4 import BeautifulSoup
 
 import nhentai
@@ -182,7 +183,7 @@ def getSavedLinkedMessages():
     return linksRepliedTo
 
 
-def processComment(comment):
+def processComment(comment, isEdit=False):
     if comment.id not in messagesRepliedTo and comment.author.name != reddit.user.me():
         replyString = ""
         logString = ""
@@ -233,11 +234,12 @@ def processComment(comment):
                     logString += hitomila.generateReplyString(processedData, number)
         if replyString:
             replyString += addFooter()
-            messagesRepliedTo.append(writeCommentReply(replyString, comment))
+            if not isEdit:
+                messagesRepliedTo.append(writeCommentReply(replyString, comment))
         # required for message reply mark read
         if logString:
             logRequest(logString, comment)
-        return True
+        return replyString
 
 
 def logRequest(replyString, comment):
@@ -254,7 +256,6 @@ def processPMs(reddit):
         linkMessage = message.subject == "[Link]" or message.subject == "re: [Link]"
         linkRequestInComment = message.subject == 'comment reply' and "!link" in message.body.lower()
 
-        # This PM doesn't meet the response criteria. Skip it.
         if not (usernameMention or usernameInBody):
             if linkMessage:
                 scanPM(message)
@@ -267,6 +268,28 @@ def processPMs(reddit):
         try:
             mentionedComment = reddit.comment(message.id)
             mentionedComment.refresh()
+
+            replies = mentionedComment.replies
+
+            ownComments = []
+            commentToEdit = None
+
+            for reply in replies:
+                if (reply.author.name == 'nhentaitagbot'):
+                    ownComments.append(reply)
+            for comment in ownComments:
+                nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers, redacted = getOldResponses(comment)
+                if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or hitomilaNumbers or redacted:
+                    commentToEdit = comment
+            replyString = processComment(mentionedComment, isEdit=True)
+            try:
+                if replyString:
+                    if commentToEdit:
+                        commentToEdit.edit(replyString)
+                        message.mark_read()
+                        continue
+            except:
+                break
             print(mentionedComment.body)
             if processComment(mentionedComment):
                 message.mark_read()
@@ -356,65 +379,9 @@ def processCommentReply(comment):
     if foundParent:
         parentComment = reddit.comment(foundParent.group(0))
         if parentComment.author.name == reddit.user.me() and parentComment.id not in postsLinked:
-            if re.search(r'\[click here\]', parentComment.body):
-                return False
-            parent = parentComment
-            parentComment = parentComment.body
-
-            # Remove restricted numbers
-            # Remove already existing links
-            parentComment = re.sub(r'\[.*?\]\(.*?\)', '', parentComment)
-            print(parentComment)
-            redacted = re.findall(r'&#32;\n\n', parentComment)
-            print(redacted)
-            parentComment = re.sub(r'(?<=>).*?(?=&#32;\n\n)', '', parentComment)
-
-
-            # print(parentComment)
-
-            tsuminoNumbers = re.findall(r'(?<=>Tsumino: )\d{5,6}', parentComment)
-            try:
-                tsuminoNumbers = [int(number) for number in tsuminoNumbers]
-            except ValueError:
-                tsuminoNumbers = []
-            parentComment = re.sub(r'(?<=>Tsumino: )\d{5,6}', '', parentComment)
-            print(tsuminoNumbers)
-            # print(parentComment)
-
-
-            ehentaiNumbersCandidates = re.findall(r'(?<=>E-Hentai: )\d{1,8}\/\w*', parentComment)
-            print(ehentaiNumbersCandidates)
-            try:
-                for entry in ehentaiNumbersCandidates:
-                    galleryID = int(re.search(r'\d+(?=\/)', entry).group(0))
-                    galleryToken = re.search(r'(?<=\/)\w+', entry).group(0)
-                    ehentaiNumbers.append([galleryID, galleryToken])
-            except AttributeError:
-                print("Number Recognition failed Ehentai")
-
-            parentComment = re.sub(r'(?<=>E-Hentai: )\d{1,8}\/\w*', '', parentComment)
-            print(ehentaiNumbers)
-            # print(parentComment)
-
-            hitomilaNumbers = re.findall(r'(?<=>Hitomi.la: )\d{5,8}', parentComment)
-            try:
-                hitomilaNumbers = [int(number) for number in hitomilaNumbers]
-            except ValueError:
-                hitomilaNumbers = []
-            print(hitomilaNumbers)
-
-            parentComment = re.sub(r'(?<=>Hitomi.la: )\d{5,8}', '', parentComment)
-
-            nhentaiNumbers = re.findall(r'\d{5,6}', parentComment)
-            try:
-                nhentaiNumbers = [int(number) for number in nhentaiNumbers]
-            except ValueError:
-                nhentaiNumbers = []
-
-            redacted += re.findall(r'\[REDACTED\]', parentComment)
-            if redacted:
-                redacted = [True]
+            nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers, redacted = getOldResponses(parentComment)
     if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or hitomilaNumbers or redacted:
+        parent = parentComment
         numberOfInts = len(nhentaiNumbers)+len(tsuminoNumbers)+len(ehentaiNumbers)+len(hitomilaNumbers)
         if numberOfInts > 0:
             if numberOfInts == 1:
@@ -445,6 +412,74 @@ def processCommentReply(comment):
         
         return True
     return False
+
+
+def getOldResponses(parentComment):
+    tsuminoNumbers = []
+    ehentaiNumbers = []
+    nhentaiNumbers = []
+    hitomilaNumbers = []
+    redacted = []
+    if re.search(r'\[click here\]', parentComment.body):
+        return False
+    parentComment = parentComment.body
+
+    # Remove restricted numbers
+    # Remove already existing links
+    parentComment = re.sub(r'\[.*?\]\(.*?\)', '', parentComment)
+    print(parentComment)
+    redacted = re.findall(r'&#32;\n\n', parentComment)
+    print(redacted)
+    parentComment = re.sub(r'(?<=>).*?(?=&#32;\n\n)', '', parentComment)
+
+
+    # print(parentComment)
+
+    tsuminoNumbers = re.findall(r'(?<=>Tsumino: )\d{5,6}', parentComment)
+    try:
+        tsuminoNumbers = [int(number) for number in tsuminoNumbers]
+    except ValueError:
+        tsuminoNumbers = []
+    parentComment = re.sub(r'(?<=>Tsumino: )\d{5,6}', '', parentComment)
+    print(tsuminoNumbers)
+    # print(parentComment)
+
+
+    ehentaiNumbersCandidates = re.findall(r'(?<=>E-Hentai: )\d{1,8}\/\w*', parentComment)
+    print(ehentaiNumbersCandidates)
+    try:
+        for entry in ehentaiNumbersCandidates:
+            galleryID = int(re.search(r'\d+(?=\/)', entry).group(0))
+            galleryToken = re.search(r'(?<=\/)\w+', entry).group(0)
+            ehentaiNumbers.append([galleryID, galleryToken])
+    except AttributeError:
+        print("Number Recognition failed Ehentai")
+
+    parentComment = re.sub(r'(?<=>E-Hentai: )\d{1,8}\/\w*', '', parentComment)
+    print(ehentaiNumbers)
+    # print(parentComment)
+
+    hitomilaNumbers = re.findall(r'(?<=>Hitomi.la: )\d{5,8}', parentComment)
+    try:
+        hitomilaNumbers = [int(number) for number in hitomilaNumbers]
+    except ValueError:
+        hitomilaNumbers = []
+    print(hitomilaNumbers)
+
+    parentComment = re.sub(r'(?<=>Hitomi.la: )\d{5,8}', '', parentComment)
+
+    nhentaiNumbers = re.findall(r'\d{5,6}', parentComment)
+    try:
+        nhentaiNumbers = [int(number) for number in nhentaiNumbers]
+    except ValueError:
+        nhentaiNumbers = []
+
+    redacted += re.findall(r'\[REDACTED\]', parentComment)
+    if redacted:
+        redacted = [True]
+    return nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers, redacted
+
+
 
 
 def generateReplyLink(numbersCombi):
@@ -543,6 +578,6 @@ if __name__ == '__main__':
         try:
             main()
         except Exception as e:
-            pass
+            print(traceback.format_exc())
 
 # main()
