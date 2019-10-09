@@ -184,7 +184,7 @@ def getSavedLinkedMessages():
 
 
 def processComment(comment, isEdit=False):
-    if comment.id not in messagesRepliedTo and comment.author.name != reddit.user.me():
+    if comment.author.name != reddit.user.me():
         replyString = ""
         logString = ""
         useError = False
@@ -234,7 +234,7 @@ def processComment(comment, isEdit=False):
                     logString += hitomila.generateReplyString(processedData, number)
         if replyString:
             replyString += addFooter()
-            if not isEdit:
+            if comment.id not in messagesRepliedTo and not isEdit:
                 messagesRepliedTo.append(writeCommentReply(replyString, comment))
         # required for message reply mark read
         if logString:
