@@ -305,14 +305,24 @@ def generateLinks(number, key):
     # make the link
     linkString = ""
     if key == nhentaiKey:
-        linkString = LINK_URL_NHENTAI + str(number)
+        tags = nhentai.analyseNumber(number)
+        if len(tags) > 1 and not tags[-1]:
+            linkString = LINK_URL_NHENTAI + str(number)
     elif key == tsuminoKey:
-        # Since Tsumino is just being HTML parsed the API URL is fine
-        linkString = API_URL_TSUMINO + str(number)
+        tags = tsumino.analyseNumber(number)
+        if len(tags) > 1 and not tags[-1]:
+            # Since Tsumino is just being HTML parsed the API URL is fine
+            linkString = API_URL_TSUMINO + str(number)
     elif key == ehentaiKey:
-        linkString = LINK_URL_EHENTAI + str(number[0]) + "/" + number[1]
+        tags = ehentai.analyseNumber(number)
+        if len(tags) > 1 and not tags[-1]:
+            linkString = LINK_URL_EHENTAI + str(number[0]) + "/" + number[1]
     elif key == hitomilaKey:
-        linkString = hitomila.API_URL_HITOMILA + str(number) + ".html"
+        tags = hitomila.analyseNumber(number)
+        if len(tags) > 1 and not tags[-1]:
+            linkString = hitomila.API_URL_HITOMILA + str(number) + ".html"
+    if not linkString:
+        linkString = "This number contains restricted tags and therefore cannot be linked"
     return linkString
 
 
