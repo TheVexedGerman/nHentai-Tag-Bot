@@ -275,7 +275,7 @@ def processPMs(reddit):
             commentToEdit = None
 
             for reply in replies:
-                if (reply.author.name == 'nhentaitagbot'):
+                if (reply.author.name.lower() == 'nhentaitagbot'):
                     ownComments.append(reply)
             for comment in ownComments:
                 nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers, redacted = getOldResponses(comment)
