@@ -214,7 +214,7 @@ def getNumbers(comment):
 
 def scanURL(comment):
     nhentaiNumbers = []
-    nhentaiLinks = re.findall(r'https?:\/\/(?:www.)?nhentai.net\/g\/\d{1,6}', comment)
+    nhentaiLinks = re.findall(r'https?:\/\/(?:www.)?nhentai.net\/g\/\d{1,6}', comment.lower())
     print(nhentaiLinks)
     try:
         nhentaiNumbers = [re.search(r'\d+', link).group(0) for link in nhentaiLinks]
