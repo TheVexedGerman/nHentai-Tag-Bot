@@ -15,7 +15,7 @@ import hitomila
 import commentpy
 
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
-API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/'
+API_URL_TSUMINO = 'https://www.tsumino.com/entry/'
 API_URL_EHENTAI = "https://api.e-hentai.org/api.php"
 LINK_URL_NHENTAI = "https://nhentai.net/g/"
 LINK_URL_EHENTAI = "https://e-hentai.org/g/"

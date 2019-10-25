@@ -10,7 +10,8 @@ import postgres_credentials
 from bs4 import BeautifulSoup
 
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
-API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/'
+# API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/' # Tsumino is changing their url structue https://www.tsumino.com/entry/
+API_URL_TSUMINO = 'https://www.tsumino.com/entry/'
 API_URL_EHENTAI = "https://api.e-hentai.org/api.php"
 LINK_URL_NHENTAI = "https://nhentai.net/g/"
 LINK_URL_EHENTAI = "https://e-hentai.org/g/"
@@ -243,6 +244,7 @@ def scanURL(comment):
     commentLower = comment.lower()
     tsuminoLinks = re.findall(r'https?:\/\/(?:www.)?tsumino.com\/book\/info\/\d{1,5}', commentLower)
     tsuminoLinks += re.findall(r'https?:\/\/(?:www.)?tsumino.com\/read\/view\/\d{1,5}', commentLower)
+    tsuminoLinks += re.findall(r'https?:\/\/(?:www.)?tsumino.com\/entry\/\d{1,5}', commentLower)
     try:
         tsuminoNumbers = [re.search(r'\d+', link).group(0) for link in tsuminoLinks]
     except AttributeError:
