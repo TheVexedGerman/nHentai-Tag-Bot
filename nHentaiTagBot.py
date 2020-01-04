@@ -22,7 +22,7 @@ LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
-PARSED_SUBREDDITS = ['Animemes', 'hentai_irl', 'anime_irl', 'u_Loli-Tag-Bot', 'u_nHentaiTagBot', 'HentaiSource', 'CroppedHentaiMemes', 'hentaimemes', 'SauceSharingCommunity', 'jizzedtothisHENTAI', 'nHentaiTagBot', 'hentaidankmemes']
+PARSED_SUBREDDITS = ['Animemes', 'hentai_irl', 'anime_irl', 'u_Loli-Tag-Bot', 'u_nHentaiTagBot', 'HentaiSource', 'CroppedHentaiMemes', 'hentaimemes', 'SauceSharingCommunity', 'jizzedtothisHENTAI', 'nHentaiTagBot', 'hentaidankmemes', 'jizzedtothisPLUS']
 # REDACTED_INFO_SUBS_LV6 = ['Animemes']
 REDACTED_INFO_SUBS_ERROR = ['HentaiSource', 'Animemes', 'hentaimemes']
 USE_LINKS_SUBS = PARSED_SUBREDDITS.copy()
