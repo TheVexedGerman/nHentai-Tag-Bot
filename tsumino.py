@@ -5,9 +5,11 @@ import requests
 import json
 import re
 import datetime
-import psycopg2
-import postgres_credentials
 from bs4 import BeautifulSoup
+
+from DBConn import Database 
+
+db = Database()
 
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
 # API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/' # Tsumino is changing their url structue https://www.tsumino.com/entry/
@@ -211,8 +213,8 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0, useErro
 
 
 def getHTML(galleryNumber):
-    cursor.execute("SELECT * FROM tsumino WHERE (gallery_number = %s)", [galleryNumber])
-    cachedEntry = cursor.fetchone()
+    db.execute("SELECT * FROM tsumino WHERE (gallery_number = %s)", [galleryNumber])
+    cachedEntry = db.fetchone()
     if cachedEntry and ((datetime.datetime.now() - cachedEntry[1]) // datetime.timedelta(days=7)) < 1:
         print("cache used")
         return cachedEntry[2]
@@ -220,11 +222,11 @@ def getHTML(galleryNumber):
     if response.status_code == 200:
         if cachedEntry:
             print("update cache")
-            cursor.execute("UPDATE tsumino SET last_update = %s, html = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), response.text, int(galleryNumber)))
+            db.execute("UPDATE tsumino SET last_update = %s, html = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), response.text, int(galleryNumber)))
         else:
             print("create cache")
-            cursor.execute("INSERT INTO tsumino (gallery_number, last_update, html) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.now(), response.text))
-        db_conn.commit()
+            db.execute("INSERT INTO tsumino (gallery_number, last_update, html) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.now(), response.text))
+        db.commit()
         return response.text
 
 
@@ -255,12 +257,3 @@ def scanURL(comment):
         tsuminoNumbers = []
     tsuminoNumbers = commentpy.removeDuplicates(tsuminoNumbers)
     return tsuminoNumbers
-
-db_conn = psycopg2.connect(
-    host = postgres_credentials.HOST,
-    database = postgres_credentials.DATABASE,
-    user = postgres_credentials.USER,
-    password = postgres_credentials.PASSWORD
-)
-
-cursor = db_conn.cursor()

@@ -6,8 +6,10 @@ import json
 import re
 import time
 import datetime
-import psycopg2
-import postgres_credentials
+
+from DBConn import Database 
+
+db = Database()
 
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
 API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/'
@@ -163,8 +165,8 @@ def getJSON(galleryNumber):
     galleryNumber = str(galleryNumber)
     # request = getRequest(galleryNumber) # ['tags'] #
     # Fetch gallery info from cache
-    cursor.execute("SELECT * FROM nhentai WHERE (gallery_number = %s)", [galleryNumber])
-    cachedEntry = cursor.fetchone()
+    db.execute("SELECT * FROM nhentai WHERE (gallery_number = %s)", [galleryNumber])
+    cachedEntry = db.fetchone()
     # Use cached entry if new enough (less than 7 days old)
     if cachedEntry and ((datetime.datetime.now() - cachedEntry[1]) // datetime.timedelta(days=7)) < 1:
         print("cache used")
@@ -186,11 +188,11 @@ def getJSON(galleryNumber):
         return [404]
     if cachedEntry:
         print("update cache")
-        cursor.execute("UPDATE nhentai SET last_update = %s, json = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), request.text, int(galleryNumber)))
+        db.execute("UPDATE nhentai SET last_update = %s, json = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), request.text, int(galleryNumber)))
     else:
         print("create cache")
-        cursor.execute("INSERT INTO nhentai (gallery_number, last_update, json) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.now(), request.text))
-    db_conn.commit()
+        db.execute("INSERT INTO nhentai (gallery_number, last_update, json) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.now(), request.text))
+    db.commit()
     return nhentaiTags
 
 
@@ -226,12 +228,3 @@ def scanURL(comment):
         nhentaiNumbers = []
     nhentaiNumbers = commentpy.removeDuplicates(nhentaiNumbers)
     return nhentaiNumbers
-
-db_conn = psycopg2.connect(
-    host = postgres_credentials.HOST,
-    database = postgres_credentials.DATABASE,
-    user = postgres_credentials.USER,
-    password = postgres_credentials.PASSWORD
-)
-
-cursor = db_conn.cursor()

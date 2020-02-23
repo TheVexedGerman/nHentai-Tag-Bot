@@ -5,9 +5,11 @@ import requests
 import json
 import re
 import datetime
-import psycopg2
-import postgres_credentials
 from bs4 import BeautifulSoup
+
+from DBConn import Database 
+
+db = Database()
 
 API_URL_HITOMILA = 'https://hitomi.la/galleries/' # needs .html appended
 
@@ -192,8 +194,8 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0, useErro
 
 
 def getHTML(galleryNumber):
-    cursor.execute("SELECT * FROM hitomila WHERE (gallery_number = %s)", [galleryNumber])
-    cachedEntry = cursor.fetchone()
+    db.execute("SELECT * FROM hitomila WHERE (gallery_number = %s)", [galleryNumber])
+    cachedEntry = db.fetchone()
     if cachedEntry and ((datetime.datetime.now() - cachedEntry[1]) // datetime.timedelta(days=7)) < 1:
         print("cache used")
         return cachedEntry[2]
@@ -203,11 +205,11 @@ def getHTML(galleryNumber):
     if response.status_code == 200:
         if cachedEntry:
             print("update cache")
-            cursor.execute("UPDATE hitomila SET last_update = %s, html = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), response.text, galleryNumber))
+            db.execute("UPDATE hitomila SET last_update = %s, html = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), response.text, galleryNumber))
         else:
             print("create cache")
-            cursor.execute("INSERT INTO hitomila (gallery_number, last_update, html) VALUES (%s, %s, %s)", (galleryNumber, datetime.datetime.now(), response.text))
-        db_conn.commit()
+            db.execute("INSERT INTO hitomila (gallery_number, last_update, html) VALUES (%s, %s, %s)", (galleryNumber, datetime.datetime.now(), response.text))
+        db.commit()
         return response.text
 
 
@@ -236,12 +238,3 @@ def scanURL(comment):
         hitomilaNumbers = []
     hitomilaNumbers = commentpy.removeDuplicates(hitomilaNumbers)
     return hitomilaNumbers
-
-db_conn = psycopg2.connect(
-    host = postgres_credentials.HOST,
-    database = postgres_credentials.DATABASE,
-    user = postgres_credentials.USER,
-    password = postgres_credentials.PASSWORD
-)
-
-cursor = db_conn.cursor()
