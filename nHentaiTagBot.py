@@ -34,7 +34,9 @@ PARSED_SUBREDDITS = ['Animemes',
                      'jizzedtothisHENTAI',
                      'nHentaiTagBot',
                      'hentaidankmemes',
-                     'jizzedtothisPLUS']
+                     'jizzedtothisPLUS',
+                     'goodanimemes'
+                     ]
 # REDACTED_INFO_SUBS_LV6 = ['Animemes']
 REDACTED_INFO_SUBS_ERROR = ['HentaiSource', 'Animemes', 'hentaimemes']
 USE_LINKS_SUBS = PARSED_SUBREDDITS.copy()
