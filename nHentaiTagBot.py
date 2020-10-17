@@ -38,7 +38,11 @@ PARSED_SUBREDDITS = ['Animemes',
                      'goodanimemes'
                      ]
 # REDACTED_INFO_SUBS_LV6 = ['Animemes']
-REDACTED_INFO_SUBS_ERROR = ['HentaiSource', 'Animemes', 'hentaimemes']
+REDACTED_INFO_SUBS_ERROR = ['HentaiSource',
+                            'Animemes',
+                            'hentaimemes',
+                            'goodanimemes'
+                            ]
 USE_LINKS_SUBS = PARSED_SUBREDDITS.copy()
 USE_LINKS_SUBS.remove('anime_irl')
 
