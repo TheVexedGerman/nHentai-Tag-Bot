@@ -146,9 +146,9 @@ def generateReplyString(processedData, galleryNumberAndToken, censorshipLevel=0,
                 replyString += ">E-Hentai: [REDACTED]\n\n"
             else:
                 replyString += f">E-Hentai: {galleryNumberAndToken[0]}/{galleryNumberAndToken[1]}&#32;\n\n"
-                if useError:
-                    replyString += f"{commentpy.generate450string('E-Hentai')}\n\n"
-                    return replyString
+            if useError:
+                replyString += f"{commentpy.generate450string('E-Hentai')}\n\n"
+                return replyString
         elif generateLink:
             replyString += f">E-Hentai: [{galleryNumberAndToken[0]}/{galleryNumberAndToken[1]}]({LINK_URL_EHENTAI}{galleryNumberAndToken[0]}/{galleryNumberAndToken[1]})\n\n"
         else:

@@ -183,9 +183,9 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0, useErro
                 replyString += ">Tsumino: [REDACTED]\n\n"
             else:
                 replyString += f">Tsumino: {str(galleryNumber).zfill(5)}&#32;\n\n"
-                if useError:
-                    replyString += f"{commentpy.generate450string('Tsumino')}\n\n"
-                    return replyString
+            if useError:
+                replyString += f"{commentpy.generate450string('Tsumino')}\n\n"
+                return replyString
         elif generateLink:
             replyString += f">Tsumino: [{str(galleryNumber).zfill(5)}]({API_URL_TSUMINO}{galleryNumber})\n\n"
         else:

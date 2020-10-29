@@ -132,9 +132,9 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0, useErro
                 replyString += ">[REDACTED]\n\n"
             else:
                 replyString += f">{str(galleryNumber).zfill(5)}&#32;\n\n"
-                if useError:
-                    replyString += f"{commentpy.generate450string('nHentai')}\n\n"
-                    return replyString
+            if useError:
+                replyString += f"{commentpy.generate450string('nHentai')}\n\n"
+                return replyString
         elif generateLink:
             replyString += f">[{str(galleryNumber).zfill(5)}]({LINK_URL_NHENTAI}{galleryNumber})\n\n"
         else:

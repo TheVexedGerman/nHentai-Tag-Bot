@@ -163,9 +163,9 @@ def generateReplyString(processedData, galleryNumber, censorshipLevel=0, useErro
                 replyString += ">Hitomi.la: [REDACTED]\n\n"
             else:
                 replyString += f">Hitomi.la: {str(galleryNumber).zfill(5)}&#32;\n\n"
-                if useError:
-                    replyString += f"{commentpy.generate450string('Hitomi.la')}\n\n"
-                    return replyString
+            if useError:
+                replyString += f"{commentpy.generate450string('Hitomi.la')}\n\n"
+                return replyString
         elif generateLink:
             replyString += f">Hitomi.la: [{str(galleryNumber).zfill(5)}]({API_URL_HITOMILA}{galleryNumber}.html)\n\n"
         else:
