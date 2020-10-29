@@ -35,14 +35,17 @@ PARSED_SUBREDDITS = ['Animemes',
                      'nHentaiTagBot',
                      'hentaidankmemes',
                      'jizzedtothisPLUS',
-                     'goodanimemes'
+                     'goodanimemes',
+                     'AstolfoHentai'
                      ]
 # REDACTED_INFO_SUBS_LV6 = ['Animemes']
 REDACTED_INFO_SUBS_ERROR = ['HentaiSource',
                             'Animemes',
                             'hentaimemes',
-                            'goodanimemes'
+                            'goodanimemes',
+                            'AstolfoHentai'
                             ]
+REDACTED_INFO_SUBS_LV1 = ['goodanimemes']
 USE_LINKS_SUBS = PARSED_SUBREDDITS.copy()
 USE_LINKS_SUBS.remove('anime_irl')
 
@@ -211,6 +214,8 @@ def processComment(comment, isEdit=False):
         numbersCombi = getNumbers(comment)
         # if comment.subreddit in REDACTED_INFO_SUBS_LV6:
         #     censorshipLevel = 6
+        if comment.subreddit in REDACTED_INFO_SUBS_LV1:
+            censorshipLevel = 1
         if comment.subreddit in REDACTED_INFO_SUBS_ERROR:
             useError = True
         if comment.subreddit in USE_LINKS_SUBS:
