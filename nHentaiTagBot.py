@@ -51,6 +51,8 @@ USE_LINKS_SUBS.remove('anime_irl')
 
 # PARSED_SUBREDDITS = ['loli_tag_bot']
 # # REDACTED_INFO_SUBS_LV6 = ['loli_tag_bot']
+# # REDACTED_INFO_SUBS_LV1 = ['loli_tag_bot']
+# REDACTED_INFO_SUBS_LV1 = []
 # # REDACTED_INFO_SUBS_ERROR = ['loli_tag_bot']
 # REDACTED_INFO_SUBS_ERROR = []
 # USE_LINKS_SUBS = ['loli_tag_bot']
