@@ -7,224 +7,218 @@ import re
 import time
 import datetime
 
-from DBConn import Database 
-
-db = Database()
+# from DBConn import Database
 
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
-API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/'
-API_URL_EHENTAI = "https://api.e-hentai.org/api.php"
 LINK_URL_NHENTAI = "https://nhentai.net/g/"
-LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 
-def analyseNumber(galleryNumber):
-    title = ''
-    numberOfPages = 0
-    listOfTags = []
-    languages = []
-    artists = []
-    categories = []
-    parodies = []
-    characters = []
-    groups = []
-    isRedacted = False
-    rawData = getJSON(galleryNumber)
-    if rawData == [404]:
-        return rawData
-    if rawData:
-        # print(rawData)
-        title = rawData['title']['pretty']
-        numberOfPages = rawData['num_pages']
-        for tags in rawData['tags']:
-            if 'tag' in tags['type']:
-                listOfTags.append([tags['name'], tags['count']])
-            elif 'language' in tags['type']:
-                languages.append([tags['name'], tags['count']])
-            elif 'artist' in tags['type']:
-                artists.append([tags['name'], tags['count']])
-            elif 'category' in tags['type']:
-                categories.append([tags['name'], tags['count']])
-            elif 'parody' in tags['type']:
-                parodies.append([tags['name'], tags['count']])
-            elif 'character' in tags['type']:
-                characters.append([tags['name'], tags['count']])
-            elif 'group' in tags['type']:
-                groups.append([tags['name'], tags['count']])
-        if listOfTags:
-            for entry in listOfTags:
-                if 'lolicon' in entry[0]:
-                    isRedacted = True
-                elif 'shotacon' in entry[0]:
-                    isRedacted = True
+class Nhentai():
+    def __init__(self, database):
+        self.database = database
 
-    processedData = [title, numberOfPages, listOfTags, languages, artists, categories, parodies, characters, groups, isRedacted]
-    # Sort the tags by descending popularity to imitate website behavior
-    i = 0
-    for tagList in processedData:
-        if i > 1 and i < 9:
-            processedData[i] = sorted(tagList, key=lambda tags: tags[1], reverse=True)
-        i += 1
-    # print(processedData)
-    return processedData
+    def analyseNumber(self, galleryNumber):
+        title = ''
+        numberOfPages = 0
+        listOfTags = []
+        languages = []
+        artists = []
+        categories = []
+        parodies = []
+        characters = []
+        groups = []
+        isRedacted = False
+        rawData = self.getJSON(galleryNumber)
+        if rawData == [404]:
+            return rawData
+        if rawData:
+            title = rawData['title']['pretty']
+            numberOfPages = rawData['num_pages']
+            for tags in rawData['tags']:
+                if 'tag' in tags['type']:
+                    listOfTags.append([tags['name'], tags['count']])
+                elif 'language' in tags['type']:
+                    languages.append([tags['name'], tags['count']])
+                elif 'artist' in tags['type']:
+                    artists.append([tags['name'], tags['count']])
+                elif 'category' in tags['type']:
+                    categories.append([tags['name'], tags['count']])
+                elif 'parody' in tags['type']:
+                    parodies.append([tags['name'], tags['count']])
+                elif 'character' in tags['type']:
+                    characters.append([tags['name'], tags['count']])
+                elif 'group' in tags['type']:
+                    groups.append([tags['name'], tags['count']])
+            if listOfTags:
+                #TODO use any()
+                for entry in listOfTags:
+                    if 'lolicon' in entry[0]:
+                        isRedacted = True
+                    elif 'shotacon' in entry[0]:
+                        isRedacted = True
 
-def generateReplyString(processedData, galleryNumber, censorshipLevel=0, useError=False, generateLink=False):
-    # parodies
-    # characters
-    # tags
-    # artists
-    # groups
-    # languages
-    # categories
-    title = 0
-    numberOfPages = 1
-    listOfTags = 2
-    languages = 3
-    artists = 4
-    categories = 5
-    parodies = 6
-    characters = 7
-    groups = 8
-    isRedacted = 9
-    replyString = ""
-    if processedData[0] == 404:
-        replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
-        replyString += "nHentai returned 404 for this number. The gallery has either been removed or doesn't exist yet.\n\n"
-        return replyString
-    if processedData[title]:
-        #Censorship engine
-        if processedData[isRedacted]:
-            if censorshipLevel > 5:
-                return ""
-            #Level 2
-            if censorshipLevel > 1:
-                processedData[title] = "[REDACTED]"
-                if processedData[artists]:
-                    for element in processedData[artists]:
-                        element[0] = "[REDACTED]"
-                if processedData[groups]:
-                    for element in processedData[groups]:
-                        element[0] = "[REDACTED]"
-            #Level 3
-            if censorshipLevel > 2:
-                if processedData[characters]:
-                    for element in processedData[characters]:
-                        element[0] = "[REDACTED]"
-                if processedData[parodies]:
-                    for element in processedData[parodies]:
-                        element[0] = "[REDACTED]"
-            #Level 4
-            if censorshipLevel > 3:
-                if processedData[listOfTags]:
-                    for element in processedData[listOfTags]:
-                        if not any(tag in element[0] for tag in ['loli','shota']):
-                            element[0] = "[REDACTED]"
-            #Level 5
-            if censorshipLevel > 4:
-                if processedData[languages]:
-                    for element in processedData[languages]:
-                        element[0] = "[REDACTED]"
-                if processedData[categories]:
-                    for element in processedData[categories]:
-                        element[0] = "[REDACTED]"
-                processedData[numberOfPages] = "[REDACTED]"
-        if processedData[isRedacted]:
-            if censorshipLevel > 0:
-                replyString += ">[REDACTED]\n\n"
-            else:
-                replyString += f">{str(galleryNumber).zfill(5)}&#32;\n\n"
-            if useError:
-                replyString += f"{commentpy.generate450string('nHentai')}\n\n"
-                return replyString
-        elif generateLink:
-            replyString += f">[{str(galleryNumber).zfill(5)}]({LINK_URL_NHENTAI}{galleryNumber})\n\n"
-        else:
-            replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
-
-        replyString += "**Title**: " + processedData[title] + "\n\n"
-        replyString += "**Number of pages**: " + str(processedData[numberOfPages]) + "\n\n"
+        processedData = {
+            "title": title,
+            "numberOfPages": numberOfPages,
+            "listOfTags": listOfTags,
+            "languages": languages, 
+            "artists": artists,
+            "categories": categories,
+            "parodies": parodies,
+            "characters": characters,
+            "groups": groups,
+            "isRedacted": isRedacted
+        }
         
-        if processedData[characters]:
-            replyString += commentpy.additionalTagsString(processedData[characters], "Characters") + "\n\n"
-        if processedData[parodies]:
-            replyString += commentpy.additionalTagsString(processedData[parodies], "Parodies") + "\n\n"
-        if processedData[listOfTags]:
-            replyString += commentpy.additionalTagsString(processedData[listOfTags], "Tags") + "\n\n"
-        if processedData[artists]:
-            replyString += commentpy.additionalTagsString(processedData[artists], "Artists") + "\n\n"
-        if processedData[groups]:
-            replyString += commentpy.additionalTagsString(processedData[groups], "Groups") + "\n\n"
-        if processedData[languages]:
-            replyString += commentpy.additionalTagsString(processedData[languages], "Languages") + "\n\n"
-        if processedData[categories]:
-            replyString += commentpy.additionalTagsString(processedData[categories], "Categories") + "\n\n"
-    # print (replyString)
-    return replyString
+        # Sort the tags by descending popularity to imitate website behavior
+        for key in processedData.keys():
+            if key is not any(["title", "numberOfPages" "isRedacted"]):
+                processedData[key] = sorted(processedData[key], key=lambda tags: tags[1], reverse=True)
+            i += 1
+        return processedData
+
+    def generateReplyString(self, processedData, galleryNumber, censorshipLevel=0, useError=False, generateLink=False):
+        # parodies
+        # characters
+        # tags
+        # artists
+        # groups
+        # languages
+        # categories
+        replyString = ""
+        if processedData[0] == 404:
+            replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
+            replyString += "nHentai returned 404 for this number. The gallery has either been removed or doesn't exist yet.\n\n"
+            return replyString
+        if processedData.get("title"):
+            #Censorship engine
+            if processedData.get("isRedacted"):
+                if censorshipLevel > 5:
+                    return ""
+                #Level 2
+                if censorshipLevel > 1:
+                    processedData["title"] = "[REDACTED]"
+                    if processedData.keys("artists"):
+                        for element in processedData.keys("artists"):
+                            element[0] = "[REDACTED]"
+                    if processedData.keys("groups"):
+                        for element in processedData.keys("groups"):
+                            element[0] = "[REDACTED]"
+                #Level 3
+                if censorshipLevel > 2:
+                    if processedData.keys("characters"):
+                        for element in processedData.keys("characters"):
+                            element[0] = "[REDACTED]"
+                    if processedData.keys("parodies"):
+                        for element in processedData.keys("parodies"):
+                            element[0] = "[REDACTED]"
+                #Level 4
+                if censorshipLevel > 3:
+                    if processedData.keys("listOfTags"):
+                        for element in processedData.keys("listOfTags"):
+                            if not any(tag in element[0] for tag in ['loli','shota']):
+                                element[0] = "[REDACTED]"
+                #Level 5
+                if censorshipLevel > 4:
+                    if processedData.keys("languages"):
+                        for element in processedData.keys("languages"):
+                            element[0] = "[REDACTED]"
+                    if processedData.keys("categories"):
+                        for element in processedData.keys("categories"):
+                            element[0] = "[REDACTED]"
+                    processedData["numberOfPages"] = "[REDACTED]"
+            if processedData.keys("isRedacted"):
+                if censorshipLevel > 0:
+                    replyString += ">[REDACTED]\n\n"
+                else:
+                    replyString += f">{str(galleryNumber).zfill(5)}&#32;\n\n"
+                if useError:
+                    replyString += f"{commentpy.generate450string('nHentai')}\n\n"
+                    return replyString
+            elif generateLink:
+                replyString += f">[{str(galleryNumber).zfill(5)}]({LINK_URL_NHENTAI}{galleryNumber})\n\n"
+            else:
+                replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
+
+            replyString += "**Title**: " + processedData.keys("title") + "\n\n"
+            replyString += "**Number of pages**: " + str(processedData.keys("numberOfPages")) + "\n\n"
+            
+            if processedData.keys("characters"):
+                replyString += commentpy.additionalTagsString(processedData.keys("characters"), "Characters") + "\n\n"
+            if processedData.keys("parodies"):
+                replyString += commentpy.additionalTagsString(processedData.keys("parodies"), "Parodies") + "\n\n"
+            if processedData.keys("listOfTags"):
+                replyString += commentpy.additionalTagsString(processedData.keys("listOfTags"), "Tags") + "\n\n"
+            if processedData.keys("artists"):
+                replyString += commentpy.additionalTagsString(processedData.keys("artists"), "Artists") + "\n\n"
+            if processedData.keys("groups"):
+                replyString += commentpy.additionalTagsString(processedData.keys("groups"), "Groups") + "\n\n"
+            if processedData.keys("languages"):
+                replyString += commentpy.additionalTagsString(processedData.keys("languages"), "Languages") + "\n\n"
+            if processedData.keys("categories"):
+                replyString += commentpy.additionalTagsString(processedData.keys("categories"), "Categories") + "\n\n"
+        return replyString
 
 
-def getJSON(galleryNumber):
-    galleryNumber = str(galleryNumber)
-    # request = getRequest(galleryNumber) # ['tags'] #
-    # Fetch gallery info from cache
-    db.execute("SELECT * FROM nhentai WHERE (gallery_number = %s)", [galleryNumber])
-    cachedEntry = db.fetchone()
-    # Use cached entry if new enough (less than 7 days old)
-    if cachedEntry and ((datetime.datetime.now() - cachedEntry[1]) // datetime.timedelta(days=7)) < 1:
-        print("cache used")
-        return cachedEntry[2]
-    request = requests.get(API_URL_NHENTAI+galleryNumber)
-    if request == None:
-        if cachedEntry:
-            return cachedEntry[2]
-        else:
-            return []
-    if request.status_code == 404:
-        if cachedEntry:
-            return cachedEntry[2]
-        else:
+    def getJSON(self, galleryNumber):
+        galleryNumber = str(galleryNumber)
+        # request = getRequest(galleryNumber) # ['tags'] #
+        # Fetch gallery info from cache
+        self.database.execute("SELECT last_update, json FROM nhentai WHERE (gallery_number = %s)", [galleryNumber])
+        cachedEntry = self.database.fetchone()
+        # Use cached entry if new enough (less than 7 days old)
+        if cachedEntry and ((datetime.datetime.now() - cachedEntry[0]) // datetime.timedelta(days=7)) < 1:
+            return cachedEntry[1]
+        request = requests.get(API_URL_NHENTAI+galleryNumber)
+        if request == None:
+            if cachedEntry:
+                return cachedEntry[1]
+            else:
+                return []
+        if request.status_code == 404:
+            if cachedEntry:
+                return cachedEntry[1]
+            else:
+                return [404]
+        # nhentaiTags = json.loads(re.search(r'(?<=N.gallery\().*(?=\))', request.text).group(0))
+        nhentaiTags = request.json()
+        if "error" in nhentaiTags:
             return [404]
-    # nhentaiTags = json.loads(re.search(r'(?<=N.gallery\().*(?=\))', request.text).group(0))
-    nhentaiTags = request.json()
-    if "error" in nhentaiTags:
-        return [404]
-    if cachedEntry:
-        print("update cache")
-        db.execute("UPDATE nhentai SET last_update = %s, json = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), request.text, int(galleryNumber)))
-    else:
-        print("create cache")
-        db.execute("INSERT INTO nhentai (gallery_number, last_update, json) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.now(), request.text))
-    db.commit()
-    return nhentaiTags
+        if cachedEntry:
+            self.database.execute("UPDATE nhentai SET last_update = %s, json = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), request.text, int(galleryNumber)))
+        else:
+            self.database.execute("INSERT INTO nhentai (gallery_number, last_update, json) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.now(), request.text))
+        self.database.commit()
+        return nhentaiTags
 
 
-def getRequest(galleryNumber):
-    for i in range(1, 5):
-        request = requests.get(LINK_URL_NHENTAI+galleryNumber) # ['tags'] #
-        if request.status_code == 200 or request.status_code == 404:
-            return request
-        time.sleep(i)
-    return None
+    def getRequest(self, galleryNumber):
+        for i in range(1, 5):
+            request = requests.get(LINK_URL_NHENTAI+galleryNumber) # ['tags'] #
+            if request.status_code == 200 or request.status_code == 404:
+                return request
+            time.sleep(i)
+        return None
 
-def getNumbers(comment):
-    numbers = re.findall(r'(?<=\()\d{5,6}(?=\))', comment)
-    try:
-        numbers = [int(number) for number in numbers]
-    except ValueError:
-        numbers = []
-    numbers = commentpy.removeDuplicates(numbers)
-    return numbers
+    def getNumbers(self, comment):
+        numbers = re.findall(r'(?<=\()\d{5,6}(?=\))', comment)
+        try:
+            numbers = [int(number) for number in numbers]
+        except ValueError:
+            numbers = []
+        numbers = commentpy.removeDuplicates(numbers)
+        return numbers
 
 
-def scanURL(comment):
-    nhentaiNumbers = []
-    nhentaiLinks = re.findall(r'https?:\/\/(?:www.)?nhentai.net\/g\/\d{1,6}', comment.lower())
-    print(nhentaiLinks)
-    try:
-        nhentaiNumbers = [re.search(r'\d+', link).group(0) for link in nhentaiLinks]
-    except AttributeError:
-        print("No nHentai links")
-    try:
-        nhentaiNumbers = [int(number) for number in nhentaiNumbers]
-    except ValueError:
+    def scanURL(self, comment):
         nhentaiNumbers = []
-    nhentaiNumbers = commentpy.removeDuplicates(nhentaiNumbers)
-    return nhentaiNumbers
+        nhentaiLinks = re.findall(r'https?:\/\/(?:www.)?nhentai.net\/g\/\d{1,6}', comment.lower())
+        try:
+            nhentaiNumbers = [re.search(r'\d+', link).group(0) for link in nhentaiLinks]
+        except AttributeError:
+            pass
+        try:
+            nhentaiNumbers = [int(number) for number in nhentaiNumbers]
+        except ValueError:
+            nhentaiNumbers = []
+        nhentaiNumbers = commentpy.removeDuplicates(nhentaiNumbers)
+        return nhentaiNumbers
