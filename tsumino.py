@@ -117,6 +117,12 @@ class Tsumino():
         else:
             return []
 
+    def generateLinks(self, number):
+        tags = self.analyseNumber(number)
+        if tags.get('isRedacted'):
+            return "This number contains restricted tags and therefore cannot be linked"
+        if tags > 1:
+            return API_URL_TSUMINO + str(number)
 
     def generateReplyString(self, processedData, galleryNumber, censorshipLevel=0, useError=False, generateLink=False):
         # Title
@@ -241,4 +247,5 @@ class Tsumino():
         except ValueError:
             tsuminoNumbers = []
         tsuminoNumbers = commentpy.removeDuplicates(tsuminoNumbers)
-        return tsuminoNumbers
+        return [{'number': number, 'type': 'tsumino'} for number in tsuminoNumbers]
+        

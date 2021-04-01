@@ -117,6 +117,13 @@ class NHentaiTagBot():
         self.tsumino = Tsumino(database)
         self.ehentai = Ehentai(database)
         self.hitomila = Hitomila(database)
+        self.processors = {
+            'nhentai': self.nhentai,
+            'tsumino': self.tsumino,
+            'ehentai': self.ehentai,
+            'hitomila': self.hitomila
+        }
+
         self.parsed_subreddit = "+".join(PARSED_SUBREDDITS)
 
 
@@ -159,14 +166,13 @@ class NHentaiTagBot():
 
     #TODO use dict instead of list
     def getNumbers(self, comment):
-        numbersCombi = []
         numbersCombi = self.keyWordDetection(comment)
         if not numbersCombi:
             nhentaiNumbers = self.nhentai.getNumbers(comment.body)
             tsuminoNumbers = self.tsumino.getNumbers(comment.body)
             ehentaiNumbers = self.ehentai.getNumbers(comment.body)
             hitomilaNumbers = self.hitomila.getNumbers(comment.body)
-            numbersCombi = [nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]
+            numbersCombi = nhentaiNumbers + tsuminoNumbers + ehentaiNumbers + hitomilaNumbers
         return numbersCombi
 
 
@@ -184,20 +190,12 @@ class NHentaiTagBot():
 
 
     def scanForURL(self, comment):
-        nhentaiNumbers = []
-        tsuminoNumbers = []
-        ehentaiNumbers = []
-        hitomilaNumbers = []
-
         nhentaiNumbers = self.nhentai.scanURL(comment)
         tsuminoNumbers = self.tsumino.scanURL(comment)
         ehentaiNumbers = self.ehentai.scanURL(comment)
         hitomilaNumbers = self.hitomila.scanURL(comment)
 
-        if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or hitomilaNumbers:
-            print("true return")
-            return [nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]
-        return []
+        return nhentaiNumbers + tsuminoNumbers + ehentaiNumbers + hitomilaNumbers
 
 
     def processComment(self, comment, isEdit=False):
@@ -216,48 +214,25 @@ class NHentaiTagBot():
                 useError = True
             if comment.subreddit in USE_LINKS_SUBS:
                 useLink = True
-            #TODO make this more efficient
-            combination = []
-            i = 0
             if numbersCombi:
-                for entry in numbersCombi:
-                    for subentry in entry:
-                        combination.append([subentry, i])
-                    i += 1
-            if combination:
-                if len(combination) > 5:
+                if len(numbersCombi) > 5:
                     replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
                     logString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
-                combination = combination[:5]
-                for entry in combination:
+                numbersCombi = numbersCombi[:5]
+                for entry in numbersCombi:
                     if replyString:
                         replyString += "&#x200B;\n\n"
                         logString += "&#x200B;\n\n"
-                    number = entry[0]
-                    key = entry[1]
-                    if key == nhentaiKey:
-                        processedData = self.nhentai.analyseNumber(number)
-                        replyString += self.nhentai.generateReplyString(processedData, number, censorshipLevel, useError, useLink)
-                        logString += self.nhentai.generateReplyString(processedData, number)
-                    elif key == tsuminoKey:
-                        processedData = self.tsumino.analyseNumber(number)
-                        replyString += self.tsumino.generateReplyString(processedData, number, censorshipLevel, useError, useLink)
-                        logString += self.tsumino.generateReplyString(processedData, number)
-                    elif key == ehentaiKey:
-                        processedData = self.ehentai.analyseNumber(number)
-                        replyString += self.ehentai.generateReplyString(processedData, number, censorshipLevel, useError, useLink)
-                        logString += self.ehentai.generateReplyString(processedData, number)
-                    elif key == hitomilaKey:
-                        processedData = self.hitomila.analyseNumber(number)
-                        replyString += self.hitomila.generateReplyString(processedData, number, censorshipLevel, useError, useLink)
-                        logString += self.hitomila.generateReplyString(processedData, number)
+                    processedData = self.processors[entry['type']].analyseNumber(entry['number'])
+                    replyString += self.processors[entry['type']].generateReplyString(processedData, entry['number'], censorshipLevel, useError, useLink)
+                    logString += self.processors[entry['type']].generateReplyString(processedData, entry['number'])
             if replyString:
                 replyString += addFooter()
                 if comment.id not in messagesRepliedTo and not isEdit:
                     messagesRepliedTo.append(self.writeCommentReply(replyString, comment))
-            # required for message reply mark read
             if logString:
                 self.logRequest(logString, comment)
+            # required for message reply mark read
             return replyString
 
 
@@ -266,7 +241,7 @@ class NHentaiTagBot():
         with open("requestHistory.csv", "a", encoding="UTF-8") as f:
             f.write(f""""{comment.id}","https://reddit.com{comment.permalink}?context=1000","{comment.body}","{replyString}","{comment.author}"\n""")
 
-
+    #TODO possibly update this
     def processPMs(self):
         print("Current time: " + str(datetime.datetime.now().time()))
         #Adapted from Roboragi
@@ -317,62 +292,20 @@ class NHentaiTagBot():
                 break
 
 
+    
     def generateLinkString(self, numbersCombi):
         #generate the string that will be replied
         linkString = ""
         if numbersCombi:
-            if numbersCombi[nhentaiKey]:
-                numbers = numbersCombi[nhentaiKey]
-                for number in numbers:
-                    linkString += self.generateLinks(number, nhentaiKey) + "\n\n"
-            if numbersCombi[tsuminoKey]:
-                numbers = numbersCombi[tsuminoKey]
-                for number in numbers:
-                    linkString += self.generateLinks(number, tsuminoKey) + "\n\n"
-            if numbersCombi[ehentaiKey]:
-                numbers = numbersCombi[ehentaiKey]
-                for number in numbers:
-                    linkString += self.generateLinks(number, ehentaiKey) + "\n\n"
-            if numbersCombi[hitomilaKey]:
-                numbers = numbersCombi[hitomilaKey]
-                for number in numbers:
-                    linkString += self.generateLinks(number, hitomilaKey) +"\n\n"
-            if numbersCombi[redactedKey]:
-                numbers = numbersCombi[redactedKey]
-                for number in numbers:
-                    linkString += "This number has been redacted and therefore no link can be generated. \n\n"
-        return linkString
-
-    #TODO update to use dicts
-    def generateLinks(self, number, key):
-        # make the link
-        linkString = ""
-        if key == nhentaiKey:
-            tags = self.nhentai.analyseNumber(number)
-            if len(tags) > 1 and not tags[-1]:
-                linkString = LINK_URL_NHENTAI + str(number)
-        elif key == tsuminoKey:
-            tags = self.tsumino.analyseNumber(number)
-            if len(tags) > 1 and not tags[-1]:
-                # Since Tsumino is just being HTML parsed the API URL is fine
-                linkString = API_URL_TSUMINO + str(number)
-        elif key == ehentaiKey:
-            tags = self.ehentai.analyseNumber(number)
-            if len(tags) > 1 and not tags[-1]:
-                linkString = LINK_URL_EHENTAI + str(number[0]) + "/" + number[1]
-        elif key == hitomilaKey:
-            tags = self.hitomila.analyseNumber(number)
-            if len(tags) > 1 and not tags[-1]:
-                linkString = self.hitomila.API_URL_HITOMILA + str(number) + ".html"
-        if not linkString:
-            linkString = "This number contains restricted tags and therefore cannot be linked"
+            for entry in numbersCombi:
+                linkString += self.processors[entry['type']].analyseNumber(entry['number'])
         return linkString
 
 
     def scanPM(self, message):
         linkString = ""
         numbersCombi = self.getNumbers(message)
-        numberOfInts = len(numbersCombi[0])+len(numbersCombi[1])+len(numbersCombi[2])+len(numbersCombi[3])
+        numberOfInts = len(numbersCombi)
         if (numberOfInts) > 0:
             if numberOfInts == 1:
                 linkString += "Here is your link:\n\n"
@@ -435,16 +368,16 @@ class NHentaiTagBot():
 
 
     def getOldResponses(self, parentComment):
+        numbersCombi = []
+        nhentaiNumbers = []
         tsuminoNumbers = []
         ehentaiNumbers = []
-        nhentaiNumbers = []
         hitomilaNumbers = []
-        redacted = []
+        # redacted = []
         if re.search(r'\[click here\]', parentComment.body):
             return False
         parentComment = parentComment.body
 
-        # Remove restricted numbers
         # Remove already existing links
         parentComment = re.sub(r'\[.*?\]\(.*?\)', '', parentComment)
         print(parentComment)
@@ -501,95 +434,55 @@ class NHentaiTagBot():
 
 
 
-
-    def generateReplyLink(self, numbersCombi):
+    def generateReplyLink(self, numbersCombi, manualinfo = False):
+        if not manualinfo:
+            character_map = {
+                'nhentai': {
+                    'start': '%28',
+                    'end': '%29'
+                },
+                'tsumino': {
+                    'start': '%29',
+                    'end': '%28'
+                },
+                'ehentai': {
+                    'start': '}',
+                    'end': '{'
+                },
+                'hitomila': {
+                    'start': '!',
+                    'end': '!'
+                },
+                'join_char': '+',
+                'replyString': 'https://reddit.com/message/compose/?to=nHentaiTagBot&subject=[Link]&message='
+            }
+        else:
+            character_map = {
+                'nhentai': {
+                    'start': '`(',
+                    'end': ')`'
+                },
+                'tsumino': {
+                    'start': '`)',
+                    'end': '(`'
+                },
+                'ehentai': {
+                    'start': '`}',
+                    'end': '{`'
+                },
+                'hitomila': {
+                    'start': '`!',
+                    'end': '!`'
+                },
+                'join_char': ' ',
+                'replyString' : ''
+            }
         #  %28 is ( and %29 is )
         # https://reddit.com/message/compose/?to=nHentai-Tag-Bot&subject=[Link]&message=(123456)+)12345(
-        replyString = "https://reddit.com/message/compose/?to=nHentaiTagBot&subject=[Link]&message="
-        if numbersCombi[nhentaiKey]:
-            i = 0
-            numbers = numbersCombi[nhentaiKey]
-            length = len(numbers) - 1
-            for number in numbers:
-                replyString += '%28' + str(number).zfill(5) + '%29'
-                if length != i or numbersCombi[tsuminoKey] or numbersCombi[ehentaiKey] or numbersCombi[hitomilaKey]:
-                    replyString += '+'
-                i += 1
-        if numbersCombi[tsuminoKey]:
-            i = 0
-            numbers = numbersCombi[tsuminoKey]
-            length = len(numbers) - 1
-            for number in numbers:
-                replyString += '%29' + str(number).zfill(5) + '%28'
-                if length != i or numbersCombi[ehentaiKey] or numbersCombi[hitomilaKey]:
-                    replyString += '+'
-                i += 1
-        if numbersCombi[ehentaiKey]:
-            i = 0
-            numbers = numbersCombi[ehentaiKey]
-            length = len(numbers) - 1
-            for number in numbers:
-                replyString += '}' + str(number[0]) + '/' + str(number[1]) + '{'
-                if length != i or numbersCombi[hitomilaKey]:
-                    replyString += '+'
-                i += 1
-        if numbersCombi[hitomilaKey]:
-            i = 0
-            numbers = numbersCombi[hitomilaKey]
-            length = len(numbers) - 1
-            for number in numbers:
-                replyString += '!' + str(number).zfill(5) + '!'
-                if length != i:
-                    replyString += '+'
-                i += 1
-        # if numbersCombi[redactedKey]:
-        #     i = 0
-        #     numbers = numbersCombi[redactedKey]
-        #     length = len(numbers) - 1
-        #     for number in numbers:
-        #         replyString += "This number has been removed for a reason. No link can be generated"
-        return replyString
+        replyString = character_map['replyString']
+        for i, item in enumerate(numbersCombi):
+            replyString += f"{character_map[item['type']]['start']}{'/'.join(item['number']) if item['type'] == 'ehentai' else item['number']}{character_map[item['type']]['start']}{character_map['join_char'] if i < len(numbersCombi)-1 else ''}"
 
-
-    def generateManualInfo(self, numbersCombi):
-        #TODO, use string replacement to use this function with the link generator
-        replyString = ""
-        if numbersCombi[nhentaiKey]:
-            i = 0
-            numbers = numbersCombi[nhentaiKey]
-            length = len(numbers) - 1
-            for number in numbers:
-                replyString += '`(' + str(number).zfill(5) + ')`'
-                if length != i or numbersCombi[tsuminoKey] or numbersCombi[ehentaiKey] or numbersCombi[hitomilaKey]:
-                    replyString += ' '
-                i += 1
-        if numbersCombi[tsuminoKey]:
-            i = 0
-            numbers = numbersCombi[tsuminoKey]
-            length = len(numbers) - 1
-            for number in numbers:
-                replyString += '`)' + str(number).zfill(5) + '(`'
-                if length != i or numbersCombi[ehentaiKey] or numbersCombi[hitomilaKey]:
-                    replyString += ' '
-                i += 1
-        if numbersCombi[ehentaiKey]:
-            i = 0
-            numbers = numbersCombi[ehentaiKey]
-            length = len(numbers) - 1
-            for number in numbers:
-                replyString += '`}' + str(number[0]) + '/' + str(number[1]) + '{`'
-                if length != i or numbersCombi[hitomilaKey]:
-                    replyString += ' '
-                i += 1
-        if numbersCombi[hitomilaKey]:
-            i = 0
-            numbers = numbersCombi[hitomilaKey]
-            length = len(numbers) - 1
-            for number in numbers:
-                replyString += '`!' + str(number).zfill(5) + '!`'
-                if length != i:
-                    replyString += ' '
-                i += 1
         return replyString
 
 

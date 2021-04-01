@@ -82,6 +82,12 @@ class Ehentai():
 
         }
 
+    def generateLinks(self, number):
+        tags = self.analyseNumber(number)
+        if tags.get('isRedacted'):
+            return "This number contains restricted tags and therefore cannot be linked"
+        if tags > 1:
+            return LINK_URL_EHENTAI + str(number[0]) + "/" + number[1]
 
     def generateReplyString(self, processedData, galleryNumberAndToken, censorshipLevel=0, useError=False, generateLink=False):
         # Title
@@ -240,4 +246,4 @@ class Ehentai():
         except AttributeError:
             pass
         ehentaiNumbers = commentpy.removeDupes2(ehentaiNumbers)
-        return ehentaiNumbers
+        return [{'number': number, 'type': 'ehentai'} for number in ehentaiNumbers]

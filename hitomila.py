@@ -118,6 +118,13 @@ class Hitomila():
         else:
             return []
 
+    def generateLinks(self, number):
+        tags = self.analyseNumber(number)
+        if tags.get('isRedacted'):
+            return "This number contains restricted tags and therefore cannot be linked"
+        if tags > 1:
+            return API_URL_HITOMILA + str(number) + ".html"
+
     def generateReplyString(self, processedData, galleryNumber, censorshipLevel=0, useError=False, generateLink=False):
         replyString = ''
 
@@ -240,4 +247,4 @@ class Hitomila():
         except ValueError:
             hitomilaNumbers = []
         hitomilaNumbers = commentpy.removeDuplicates(hitomilaNumbers)
-        return hitomilaNumbers
+        return [{'number': number, 'type': 'hitomila'} for number in hitomilaNumbers]

@@ -76,6 +76,13 @@ class Nhentai():
             i += 1
         return processedData
 
+    def generateLinks(self, number):
+        tags = self.analyseNumber(number)
+        if tags.get('isRedacted'):
+            return "This number contains restricted tags and therefore cannot be linked"
+        if tags > 1:
+            return LINK_URL_NHENTAI + str(number)
+
     def generateReplyString(self, processedData, galleryNumber, censorshipLevel=0, useError=False, generateLink=False):
         # parodies
         # characters
@@ -221,4 +228,4 @@ class Nhentai():
         except ValueError:
             nhentaiNumbers = []
         nhentaiNumbers = commentpy.removeDuplicates(nhentaiNumbers)
-        return nhentaiNumbers
+        return [{'number': number, 'type': 'nhentai'} for number in nhentaiNumbers]
