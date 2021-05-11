@@ -2,6 +2,7 @@ import requests
 import json
 import os
 import praw
+import prawcore
 import re
 import time
 import datetime
@@ -65,12 +66,6 @@ ehentaiKey = 2
 hitomilaKey = 3
 redactedKey = 4
 
-messagesRepliedTo = []
-
-def addFooter():
-    # Needs to use ASCII code to not break reddit formatting &#32; is space &#40; is ( and &#41; is )
-    return "---\n\n^(nHentai), )Tsumino(, }e-hentai/token{, !hitomi.la! | min 5 digits | [FAQ](https://www.reddit.com/r/nHentaiTagBot/wiki/index) | [/r/](https://www.reddit.com/r/nHentaiTagBot/) | [Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)".replace(' ', '&#32;').replace('(', '&#40;', 2).replace(')', '&#41;', 2)
-
 
 def authenticate():
     print("Authenticating...")
@@ -81,18 +76,6 @@ def authenticate():
     print("Authenticated as {}".format(reddit.user.me()))
     return reddit
 
-
-#TODO change this over to using the DB
-def getSavedMessages():
-    # return an empty list if empty
-    if not os.path.isfile("messagesRepliedTo.txt"):
-        messagesRepliedTo = []
-    else:
-        with open("messagesRepliedTo.txt", "r") as f:
-            # updated read file method from https://stackoverflow.com/questions/3925614/how-do-you-read-a-file-into-a-list-in-python
-            messagesRepliedTo = f.read().splitlines()
-
-    return messagesRepliedTo
 
 #TODO change this over to using the DB
 def getSavedLinkedMessages():
@@ -135,44 +118,47 @@ class NHentaiTagBot():
                     self.processPMs()
                     lastCheckedPMsTime = time.time()
                 print(comment.body)
-                self.processComment(comment)
+                reply_sting, log_string = self.processComment(comment)
+                if reply_sting and log_string:
+                    reply = self.writeCommentReply(reply_sting, comment)
+                    if reply:
+                        self.logRequest(log_string, comment, reply)
 
 
-    #TODO update the don't reply twice check
+    def logRequest(self, replyString, comment, reply):
+        #TODO add tracking to check what doujins are the most popular
+        query = """INSERT INTO tag_bot
+        (comment_id, body, reply, reply_id, comment_author, created_utc, post_id, subreddit)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (comment_id)
+        DO UPDATE SET body_edited = EXCLUDED.body, reply_edited = EXCLUDED.reply"""
+        self.database.execute(query, (comment.id, comment.body, replyString, reply.id, comment.author.name, datetime.datetime.utcnow(), comment.link_id, comment.subreddit))
+        self.database.commit()
+        
+
     def writeCommentReply(self, replyString, comment):
+        reply = None
         print(f"Commenting with: \n{replyString}")
-        # post the replyString to reddit as a reply
         for attempt in range(2):
             try:
                 print("Attempt: " + str(attempt))
-                comment.reply(replyString)
+                reply = comment.reply(replyString)
                 print("Post successful")
-                # also write it to file to enable reloading after shutdown
-                with open("messagesRepliedTo.txt", "a") as f:
-                    f.write(comment.id + "\n")
-            # from Roboragi, but praw doesn't seem to be found
-            except praw.errors.Forbidden:
-                    print('Request from banned subreddit: {0}\n'.format(comment.subreddit))
-            # extrapolated from errors, maybe better?
             except prawcore.exceptions.Forbidden:
                 print("unable to post")
+                break
             except:
                 print("Post unsuccessful")
-            else:
-                break
-        # save the replied to comment to not analyse and reply again
-        return comment.id
+        return reply
 
 
-    #TODO use dict instead of list
     def getNumbers(self, comment):
+        # use a list here because every entry is marked and it makes iterating easier
         numbersCombi = self.keyWordDetection(comment)
         if not numbersCombi:
-            nhentaiNumbers = self.nhentai.getNumbers(comment.body)
-            tsuminoNumbers = self.tsumino.getNumbers(comment.body)
-            ehentaiNumbers = self.ehentai.getNumbers(comment.body)
-            hitomilaNumbers = self.hitomila.getNumbers(comment.body)
-            numbersCombi = nhentaiNumbers + tsuminoNumbers + ehentaiNumbers + hitomilaNumbers
+            numbersCombi = []
+            for processor in self.processors.values():
+                numbersCombi += processor.getNumbers(comment)
         return numbersCombi
 
 
@@ -190,56 +176,52 @@ class NHentaiTagBot():
 
 
     def scanForURL(self, comment):
-        nhentaiNumbers = self.nhentai.scanURL(comment)
-        tsuminoNumbers = self.tsumino.scanURL(comment)
-        ehentaiNumbers = self.ehentai.scanURL(comment)
-        hitomilaNumbers = self.hitomila.scanURL(comment)
-
-        return nhentaiNumbers + tsuminoNumbers + ehentaiNumbers + hitomilaNumbers
+        numbersCombi = []
+        for processor in self.processors.values():
+            numbersCombi += processor.scanURL(comment)
+        return numbersCombi
 
 
     def processComment(self, comment, isEdit=False):
-        if comment.author.name != self.reddit.user.me():
-            replyString = ""
-            logString = ""
-            useError = False
-            useLink = False
-            censorshipLevel = 0
-            numbersCombi = self.getNumbers(comment)
-            # if comment.subreddit in REDACTED_INFO_SUBS_LV6:
-            #     censorshipLevel = 6
-            if comment.subreddit in REDACTED_INFO_SUBS_LV1:
-                censorshipLevel = 1
-            if comment.subreddit in REDACTED_INFO_SUBS_ERROR:
-                useError = True
-            if comment.subreddit in USE_LINKS_SUBS:
-                useLink = True
-            if numbersCombi:
-                if len(numbersCombi) > 5:
-                    replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
-                    logString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
-                numbersCombi = numbersCombi[:5]
-                for entry in numbersCombi:
-                    if replyString:
-                        replyString += "&#x200B;\n\n"
-                        logString += "&#x200B;\n\n"
-                    processedData = self.processors[entry['type']].analyseNumber(entry['number'])
-                    replyString += self.processors[entry['type']].generateReplyString(processedData, entry['number'], censorshipLevel, useError, useLink)
-                    logString += self.processors[entry['type']].generateReplyString(processedData, entry['number'])
-            if replyString:
-                replyString += addFooter()
-                if comment.id not in messagesRepliedTo and not isEdit:
-                    messagesRepliedTo.append(self.writeCommentReply(replyString, comment))
-            if logString:
-                self.logRequest(logString, comment)
-            # required for message reply mark read
-            return replyString
+        #TODO move these checks out of this method
+        if comment.author.name == self.reddit.user.me():
+            return
+        self.database.execute("SELECT comment_id FROM tag_bot WHERE comment_id = %s", (comment.id,))
+        already_replied = self.database.fetchone()
+        if already_replied and not isEdit:
+            return
+        useError = comment.subreddit in REDACTED_INFO_SUBS_ERROR
+        useLink = comment.subreddit in USE_LINKS_SUBS
+        censorshipLevel = 0
+        # if comment.subreddit in REDACTED_INFO_SUBS_LV6:
+        #     censorshipLevel = 6
+        if comment.subreddit in REDACTED_INFO_SUBS_LV1:
+            censorshipLevel = 1
+        numbersCombi = self.getNumbers(comment)
+        replyString, logString = self.generateReplyString(numbersCombi, censorshipLevel, useError, useLink)
+        return replyString, logString
+
+    def generateReplyString(self, numbersCombi, censorshipLevel, useError, useLink):
+        replyString = ""
+        logString = ""
+        if numbersCombi:
+            if len(numbersCombi) > 5:
+                replyString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
+                logString += "This bot does a maximum of 5 numbers at a time, your list has been shortened:\n\n"
+            numbersCombi = numbersCombi[:5]
+            for entry in numbersCombi:
+                if replyString:
+                    replyString += "&#x200B;\n\n"
+                    logString += "&#x200B;\n\n"
+                processedData = self.processors[entry['type']].analyseNumber(entry['number'])
+                replyString += self.processors[entry['type']].generateReplyString(processedData, entry['number'], censorshipLevel, useError, useLink)
+                logString += self.processors[entry['type']].generateReplyString(processedData, entry['number'])
+        if replyString:
+            # Needs to use ASCII code to not break reddit formatting &#32; is space &#40; is ( and &#41; is )
+            replyString += "---\n\n^(nHentai), )Tsumino(, }e-hentai/token{, !hitomi.la! | min 5 digits | [FAQ](https://www.reddit.com/r/nHentaiTagBot/wiki/index) | [/r/](https://www.reddit.com/r/nHentaiTagBot/) | [Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)".replace(' ', '&#32;').replace('(', '&#40;', 2).replace(')', '&#41;', 2)
+        return replyString, logString
 
 
-    #TODO change this to log into DB
-    def logRequest(self, replyString, comment):
-        with open("requestHistory.csv", "a", encoding="UTF-8") as f:
-            f.write(f""""{comment.id}","https://reddit.com{comment.permalink}?context=1000","{comment.body}","{replyString}","{comment.author}"\n""")
 
     #TODO possibly update this
     def processPMs(self):
@@ -433,7 +415,6 @@ class NHentaiTagBot():
         return nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers, redacted
 
 
-
     def generateReplyLink(self, numbersCombi, manualinfo = False):
         if not manualinfo:
             character_map = {
@@ -488,8 +469,6 @@ class NHentaiTagBot():
 
 def main():
     reddit = authenticate()
-    global messagesRepliedTo
-    messagesRepliedTo = getSavedMessages()
     global postsLinked
     postsLinked = getSavedLinkedMessages()
     while True:
