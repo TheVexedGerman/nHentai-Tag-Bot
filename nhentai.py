@@ -213,7 +213,7 @@ class Nhentai():
         except ValueError:
             numbers = []
         numbers = commentpy.removeDuplicates(numbers)
-        return numbers
+        return [{'number': number, 'type': 'nhentai'} for number in numbers]
 
 
     def scanURL(self, comment):

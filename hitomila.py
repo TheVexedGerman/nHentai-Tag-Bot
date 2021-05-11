@@ -230,7 +230,7 @@ class Hitomila():
         except ValueError:
             numbers = []
         numbers = commentpy.removeDuplicates(numbers)
-        return numbers
+        return [{'number': number, 'type': 'hitomila'} for number in numbers]
 
     def scanURL(self, comment):
         hitomilaNumbers = []

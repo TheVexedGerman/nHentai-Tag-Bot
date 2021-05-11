@@ -228,7 +228,7 @@ class Tsumino():
         except ValueError:
             numbers = []
         numbers = commentpy.removeDuplicates(numbers)
-        return numbers
+        return [{'number': number, 'type': 'tsumino'} for number in numbers]
 
 
     def scanURL(self, comment):

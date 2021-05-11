@@ -208,7 +208,7 @@ class Ehentai():
                 numbers.append([galleryID, galleryToken])
         except AttributeError:
             pass
-        return numbers
+        return [{'number': number, 'type': 'ehentai'} for number in numbers]
 
     def scanURL(self, comment):
         ehentaiNumbers = []
