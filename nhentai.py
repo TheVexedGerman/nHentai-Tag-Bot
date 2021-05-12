@@ -216,6 +216,15 @@ class Nhentai():
         return [{'number': number, 'type': 'nhentai'} for number in numbers]
 
 
+    def remove_and_return_old_results_from_comment(self, comment):
+        nhentaiNumbers = re.findall(r'\d{5,6}', comment)
+        try:
+            nhentaiNumbers = [int(number) for number in nhentaiNumbers]
+        except ValueError:
+            nhentaiNumbers = []
+        return [{'number': number, 'type': 'nhentai'} for number in nhentaiNumbers], comment
+
+
     def scanURL(self, comment):
         nhentaiNumbers = []
         nhentaiLinks = re.findall(r'https?:\/\/(?:www.)?nhentai.net\/g\/\d{1,6}', comment.lower())

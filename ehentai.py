@@ -210,6 +210,21 @@ class Ehentai():
             pass
         return [{'number': number, 'type': 'ehentai'} for number in numbers]
 
+
+    def remove_and_return_old_results_from_comment(self, comment):
+        ehentaiNumbers = []
+        ehentaiNumbersCandidates = re.findall(r'(?<=>E-Hentai: )\d{1,8}\/\w*', comment)
+        try:
+            for entry in ehentaiNumbersCandidates:
+                galleryID = int(re.search(r'\d+(?=\/)', entry).group(0))
+                galleryToken = re.search(r'(?<=\/)\w+', entry).group(0)
+                ehentaiNumbers.append([galleryID, galleryToken])
+        except AttributeError:
+            print("Number Recognition failed Ehentai")
+        comment = re.sub(r'(?<=>E-Hentai: )\d{1,8}\/\w*', '', comment)
+        return [{'number': number, 'type': 'ehentai'} for number in ehentaiNumbers], comment
+
+
     def scanURL(self, comment):
         ehentaiNumbers = []
         # having two sites makes getting the url more than with the others.

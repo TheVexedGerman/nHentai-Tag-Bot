@@ -232,6 +232,17 @@ class Hitomila():
         numbers = commentpy.removeDuplicates(numbers)
         return [{'number': number, 'type': 'hitomila'} for number in numbers]
 
+
+    def remove_and_return_old_results_from_comment(self, comment):
+        hitomilaNumbers = re.findall(r'(?<=>Hitomi.la: )\d{5,8}', comment)
+        try:
+            hitomilaNumbers = [int(number) for number in hitomilaNumbers]
+        except ValueError:
+            hitomilaNumbers = []
+        comment = re.sub(r'(?<=>Hitomi.la: )\d{5,8}', '', comment)
+        return [{'number': number, 'type': 'hitomila'} for number in hitomilaNumbers], comment
+
+
     def scanURL(self, comment):
         hitomilaNumbers = []
         # https://hitomi.la/galleries/1367588.html

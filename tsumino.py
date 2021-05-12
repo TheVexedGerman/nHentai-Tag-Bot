@@ -231,6 +231,16 @@ class Tsumino():
         return [{'number': number, 'type': 'tsumino'} for number in numbers]
 
 
+    def remove_and_return_old_results_from_comment(self, comment):
+        tsuminoNumbers = re.findall(r'(?<=>Tsumino: )\d{5,6}', comment)
+        try:
+            tsuminoNumbers = [int(number) for number in tsuminoNumbers]
+        except ValueError:
+            tsuminoNumbers = []
+        comment = re.sub(r'(?<=>Tsumino: )\d{5,6}', '', comment)
+        return [{'number': number, 'type': 'tsumino'} for number in tsuminoNumbers], comment
+
+
     def scanURL(self, comment):
         tsuminoNumbers = []
         # use lowercase comment because tsumino has an inconsistent url scheme 
