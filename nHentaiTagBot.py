@@ -50,8 +50,8 @@ USE_LINKS_SUBS.remove('anime_irl')
 # # REDACTED_INFO_SUBS_LV6 = ['loli_tag_bot']
 # # REDACTED_INFO_SUBS_LV1 = ['loli_tag_bot']
 # REDACTED_INFO_SUBS_LV1 = []
-# # REDACTED_INFO_SUBS_ERROR = ['loli_tag_bot']
-# REDACTED_INFO_SUBS_ERROR = []
+# REDACTED_INFO_SUBS_ERROR = ['loli_tag_bot']
+# # REDACTED_INFO_SUBS_ERROR = []
 # USE_LINKS_SUBS = ['loli_tag_bot']
 
 
@@ -418,7 +418,7 @@ def main():
     postsLinked = getSavedLinkedMessages()
     tag_bot = NHentaiTagBot(reddit, database)
     while True:
-        runBot(reddit)
+        tag_bot.runBot()
 
 if __name__ == '__main__':
     while True:
