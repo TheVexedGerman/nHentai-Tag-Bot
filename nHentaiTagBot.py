@@ -17,12 +17,6 @@ from hitomila import Hitomila
 
 import commentpy
 
-API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
-API_URL_TSUMINO = 'https://www.tsumino.com/entry/'
-API_URL_EHENTAI = "https://api.e-hentai.org/api.php"
-LINK_URL_NHENTAI = "https://nhentai.net/g/"
-LINK_URL_EHENTAI = "https://e-hentai.org/g/"
-
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
 PARSED_SUBREDDITS = ['Animemes',
@@ -60,12 +54,6 @@ USE_LINKS_SUBS.remove('anime_irl')
 # REDACTED_INFO_SUBS_ERROR = []
 # USE_LINKS_SUBS = ['loli_tag_bot']
 
-nhentaiKey = 0
-tsuminoKey = 1
-ehentaiKey = 2
-hitomilaKey = 3
-redactedKey = 4
-
 
 def authenticate():
     print("Authenticating...")
@@ -77,14 +65,13 @@ def authenticate():
     return reddit
 
 
-#TODO change this over to using the DB
+#TODO change this over to using the DB eventually, though it's low volume
 def getSavedLinkedMessages():
-    # return an empty list if empty
+    # return an empty list if no file
     if not os.path.isfile("linksRepliedTo.txt"):
         linksRepliedTo = []
     else:
         with open("linksRepliedTo.txt", "r") as f:
-            # updated read file method from https://stackoverflow.com/questions/3925614/how-do-you-read-a-file-into-a-list-in-python
             linksRepliedTo = f.read().splitlines()
 
     return linksRepliedTo
@@ -99,12 +86,12 @@ class NHentaiTagBot():
         self.nhentai = Nhentai(database)
         self.tsumino = Tsumino(database)
         self.ehentai = Ehentai(database)
-        self.hitomila = Hitomila(database)
+        # self.hitomila = Hitomila(database)
         self.processors = {
             'nhentai': self.nhentai,
             'tsumino': self.tsumino,
-            'ehentai': self.ehentai,
-            'hitomila': self.hitomila
+            'ehentai': self.ehentai
+            # 'hitomila': self.hitomila
         }
 
         self.parsed_subreddit = "+".join(PARSED_SUBREDDITS)
@@ -118,21 +105,34 @@ class NHentaiTagBot():
                     self.processPMs()
                     lastCheckedPMsTime = time.time()
                 print(comment.body)
-                reply_sting, log_string = self.processComment(comment)
-                if reply_sting and log_string:
-                    reply = self.writeCommentReply(reply_sting, comment)
-                    if reply:
-                        self.logRequest(log_string, comment, reply)
+                self.scan_comment_and_reply(comment)
+
+    def scan_comment_and_reply(self, comment):
+        if comment.author.name == self.reddit.user.me():
+            return
+        self.database.execute("SELECT comment_id FROM tag_bot WHERE comment_id = %s", (comment.id,))
+        already_replied = self.database.fetchone()
+        if already_replied:
+            return
+        reply_sting, log_string, numbersCombi = self.scan_comment_and_generate_reply(comment)
+        if reply_sting and log_string:
+            reply = self.writeCommentReply(reply_sting, comment)
+            if reply:
+                self.logRequest(log_string, comment, reply, numbersCombi)
 
 
-    def logRequest(self, replyString, comment, reply):
-        #TODO add tracking to check what doujins are the most popular
+    def logRequest(self, replyString, comment, reply, numbersCombi):
         query = """INSERT INTO tag_bot
         (comment_id, body, reply, reply_id, comment_author, created_utc, post_id, subreddit)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (comment_id)
         DO UPDATE SET body_edited = EXCLUDED.body, reply_edited = EXCLUDED.reply"""
-        self.database.execute(query, (comment.id, comment.body, replyString, reply.id, comment.author.name, datetime.datetime.utcnow(), comment.link_id, comment.subreddit))
+        self.database.execute(query, (comment.id, comment.body, replyString, reply.id, comment.author.name, datetime.datetime.utcnow(), comment.link_id, comment.subreddit.name))
+        for number in numbersCombi:
+            if number['type'] == 'ehentai':
+                self.database.execute("INSERT INTO stat_tracking (gallery_number, token, site, comment_id) VALUES (%s, %s, %s, %s)", (number['number'][0], number['number'][1], number['type'], comment.id))
+            else:
+                self.database.execute("INSERT INTO stat_tracking (gallery_number, site, comment_id) VALUES (%s, %s, %s)", (number['number'], number['type'], comment.id))
         self.database.commit()
         
 
@@ -144,21 +144,23 @@ class NHentaiTagBot():
                 print("Attempt: " + str(attempt))
                 reply = comment.reply(replyString)
                 print("Post successful")
+                return reply
             except prawcore.exceptions.Forbidden:
                 print("unable to post")
                 break
             except:
                 print("Post unsuccessful")
-        return reply
+                time.sleep(2)
 
 
     def getNumbers(self, comment):
         # use a list here because every entry is marked and it makes iterating easier
+        # Try the key work detection parser, ele run the normal one.
         numbersCombi = self.keyWordDetection(comment)
         if not numbersCombi:
             numbersCombi = []
             for processor in self.processors.values():
-                numbersCombi += processor.getNumbers(comment)
+                numbersCombi += processor.getNumbers(comment.body)
         return numbersCombi
 
 
@@ -182,14 +184,7 @@ class NHentaiTagBot():
         return numbersCombi
 
 
-    def processComment(self, comment, isEdit=False):
-        #TODO move these checks out of this method
-        if comment.author.name == self.reddit.user.me():
-            return
-        self.database.execute("SELECT comment_id FROM tag_bot WHERE comment_id = %s", (comment.id,))
-        already_replied = self.database.fetchone()
-        if already_replied and not isEdit:
-            return
+    def scan_comment_and_generate_reply(self, comment):
         useError = comment.subreddit in REDACTED_INFO_SUBS_ERROR
         useLink = comment.subreddit in USE_LINKS_SUBS
         censorshipLevel = 0
@@ -199,7 +194,7 @@ class NHentaiTagBot():
             censorshipLevel = 1
         numbersCombi = self.getNumbers(comment)
         replyString, logString = self.generateReplyString(numbersCombi, censorshipLevel, useError, useLink)
-        return replyString, logString
+        return replyString, logString, numbersCombi
 
     def generateReplyString(self, numbersCombi, censorshipLevel, useError, useLink):
         replyString = ""
@@ -222,8 +217,7 @@ class NHentaiTagBot():
         return replyString, logString
 
 
-
-    #TODO possibly update this
+    #TODO definitely update this
     def processPMs(self):
         print("Current time: " + str(datetime.datetime.now().time()))
         #Adapted from Roboragi
@@ -238,7 +232,7 @@ class NHentaiTagBot():
                     self.scanPM(message)
                 if linkRequestInComment:
                     linkComment = self.reddit.comment(message.id)
-                    self.processCommentReply(linkComment)
+                    self.scan_comment_and_reply(linkComment)
                     message.mark_read()
                 continue
 
@@ -255,24 +249,23 @@ class NHentaiTagBot():
                     if (reply.author.name.lower() == 'nhentaitagbot'):
                         ownComments.append(reply)
                 for comment in ownComments:
-                    nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers, redacted = self.getOldResponses(comment)
-                    if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or hitomilaNumbers or redacted:
+                    numbers_combi = self.getOldResponses(comment)
+                    if numbers_combi:
                         commentToEdit = comment
-                replyString = self.processComment(mentionedComment, isEdit=True)
+                replyString, logstring, numbers_combi = self.scan_comment_and_generate_reply(mentionedComment)
                 try:
                     if replyString:
                         if commentToEdit:
                             commentToEdit.edit(replyString)
                             message.mark_read()
+                            self.logRequest(logstring, mentionedComment, commentToEdit, numbers_combi)
                             continue
                 except:
                     break
-                print(mentionedComment.body)
-                if self.processComment(mentionedComment):
-                    message.mark_read()
+                # if self.scan_comment_and_generate_reply(mentionedComment):
+                #     message.mark_read()
             except:
                 break
-
 
     
     def generateLinkString(self, numbersCombi):
@@ -280,7 +273,10 @@ class NHentaiTagBot():
         linkString = ""
         if numbersCombi:
             for entry in numbersCombi:
-                linkString += self.processors[entry['type']].analyseNumber(entry['number'])
+                if entry['type'] == 'redacted':
+                    linkString += "This number has been redacted and therefore no link can be generated. \n\n"
+                    continue
+                linkString += self.processors[entry['type']].generateLinks(entry['number'])
         return linkString
 
 
@@ -289,22 +285,14 @@ class NHentaiTagBot():
         numbersCombi = self.getNumbers(message)
         numberOfInts = len(numbersCombi)
         if (numberOfInts) > 0:
-            if numberOfInts == 1:
-                linkString += "Here is your link:\n\n"
-            else:
-                linkString += "Here are your links:\n\n"
-        numbersCombi.append(False)
+            linkString += f"Here {'are' if numberOfInts > 1 else 'is'} your link{'s' if numberOfInts > 1 else ''}:\n\n"
         linkString += self.generateLinkString(numbersCombi)
         message.reply(linkString)
         message.mark_read()
 
 
     def processCommentReply(self, comment):
-        tsuminoNumbers = []
-        ehentaiNumbers = []
-        nhentaiNumbers = []
-        hitomilaNumbers = []
-        redacted = []
+        numbersCombi = []
         replyString = ""
         linkString = ""
         try:
@@ -312,33 +300,28 @@ class NHentaiTagBot():
         except:
             print('failure')
         if foundParent:
-            parentComment = self.reddit.comment(foundParent.group(0))
-            if parentComment.author.name == self.reddit.user.me() and parentComment.id not in postsLinked:
-                nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers, redacted = self.getOldResponses(parentComment)
-        if nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or hitomilaNumbers or redacted:
-            parent = parentComment
-            numberOfInts = len(nhentaiNumbers)+len(tsuminoNumbers)+len(ehentaiNumbers)+len(hitomilaNumbers)
+            parent = self.reddit.comment(foundParent.group(0))
+            if parent.author.name == self.reddit.user.me() and parent.id not in postsLinked:
+                numbersCombi = self.getOldResponses(parent)
+        if numbersCombi:
+            redacted = numbersCombi[0].get('type') == 'redacted'
+            numberOfInts = len(numbersCombi) - 1 if redacted else 0
+            #check if there are unrestricted numbers
             if numberOfInts > 0:
-                if numberOfInts == 1:
-                    linkString += "Here is your link:\n\n"
-                else:
-                    linkString += "Here are your links:\n\n"
-            linkString += self.generateLinkString([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers, redacted])
+                linkString += f"Here is your link{'s' if numberOfInts > 1 else ''}:\n\n"
+            linkString += self.generateLinkString(numbersCombi)
             if not redacted:
                 replyString += "You have been PM'd the links to the numbers above.\n\n"
             else:
                 replyString += "Restricted numbers don't get links. If there are unresticted numbers a link has been PM'd to you.\n\n"
-            if (redacted and (nhentaiNumbers or tsuminoNumbers or ehentaiNumbers or hitomilaNumbers)) or not redacted:
-                replyString += "This is the first and **only** link comment I will respond to for this request to prevent clutter, if you'd also like to receive the link please [click here]("+ self.generateReplyLink([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]) +")\n\n"
+            if (redacted and numberOfInts > 0) or not redacted:
+                replyString += f"This is the first and **only** link comment I will respond to for this request to prevent clutter, if you'd also like to receive the link please [click here]({self.generateReplyLink(numbersCombi)})\n\n"
             if not redacted:
                 replyString += "---\n\n"
                 subReplyString = ""
-                subReplyString += "^Note: It seems like the official reddit app has issues handling pre-formatted PM links: if the above link leads you to a blank message form, you'll have to fill the fields in manually with `[Link]` as the subject and the numbers in brackets " + self.generateManualInfo([nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers]) + ".\n\n"
+                subReplyString += f"^Note: It seems like the official reddit app has issues handling pre-formatted PM links: if the above link leads you to a blank message form, you'll have to fill the fields in manually with `[Link]` as the subject and the numbers in brackets {self.generateReplyLink(numbersCombi, manualinfo=True)}.\n\n"
                 replyString += re.sub(r' ', '&#32;', subReplyString)
-            print(linkString)
-            print(replyString)
         if linkString and replyString:
-            print(comment.author)
             postsLinked.append(parent.id)
             with open("linksRepliedTo.txt", "a") as f:
                 f.write(parent.id + "\n")
@@ -351,68 +334,29 @@ class NHentaiTagBot():
 
     def getOldResponses(self, parentComment):
         numbersCombi = []
-        nhentaiNumbers = []
-        tsuminoNumbers = []
-        ehentaiNumbers = []
-        hitomilaNumbers = []
-        # redacted = []
+        redacted = []
         if re.search(r'\[click here\]', parentComment.body):
             return False
         parentComment = parentComment.body
 
-        # Remove already existing links
+        # Find and remove entries which require redaction
         parentComment = re.sub(r'\[.*?\]\(.*?\)', '', parentComment)
         print(parentComment)
         redacted = re.findall(r'&#32;\n\n', parentComment)
-        print(redacted)
         parentComment = re.sub(r'(?<=>).*?(?=&#32;\n\n)', '', parentComment)
-
-
-        # print(parentComment)
-
-        tsuminoNumbers = re.findall(r'(?<=>Tsumino: )\d{5,6}', parentComment)
-        try:
-            tsuminoNumbers = [int(number) for number in tsuminoNumbers]
-        except ValueError:
-            tsuminoNumbers = []
-        parentComment = re.sub(r'(?<=>Tsumino: )\d{5,6}', '', parentComment)
-        print(tsuminoNumbers)
-        # print(parentComment)
-
-
-        ehentaiNumbersCandidates = re.findall(r'(?<=>E-Hentai: )\d{1,8}\/\w*', parentComment)
-        print(ehentaiNumbersCandidates)
-        try:
-            for entry in ehentaiNumbersCandidates:
-                galleryID = int(re.search(r'\d+(?=\/)', entry).group(0))
-                galleryToken = re.search(r'(?<=\/)\w+', entry).group(0)
-                ehentaiNumbers.append([galleryID, galleryToken])
-        except AttributeError:
-            print("Number Recognition failed Ehentai")
-
-        parentComment = re.sub(r'(?<=>E-Hentai: )\d{1,8}\/\w*', '', parentComment)
-        print(ehentaiNumbers)
-        # print(parentComment)
-
-        hitomilaNumbers = re.findall(r'(?<=>Hitomi.la: )\d{5,8}', parentComment)
-        try:
-            hitomilaNumbers = [int(number) for number in hitomilaNumbers]
-        except ValueError:
-            hitomilaNumbers = []
-        print(hitomilaNumbers)
-
-        parentComment = re.sub(r'(?<=>Hitomi.la: )\d{5,8}', '', parentComment)
-
-        nhentaiNumbers = re.findall(r'\d{5,6}', parentComment)
-        try:
-            nhentaiNumbers = [int(number) for number in nhentaiNumbers]
-        except ValueError:
-            nhentaiNumbers = []
-
         redacted += re.findall(r'\[REDACTED\]', parentComment)
         if redacted:
-            redacted = [True]
-        return nhentaiNumbers, tsuminoNumbers, ehentaiNumbers, hitomilaNumbers, redacted
+            numbersCombi.append({'type': 'redacted'})
+
+        for key, processor in self.processors.items():
+            #needs to be last so that all other numbers that could match have been removed first.
+            if key == 'nhentai':
+                continue
+            numbers, parentComment = processor.remove_and_return_old_results_from_comment(parentComment)
+            numbersCombi += numbers
+        numbers, parentComment = self.processors['nhentai'].remove_and_return_old_results_from_comment(parentComment)
+
+        return numbersCombi
 
 
     def generateReplyLink(self, numbersCombi, manualinfo = False):
@@ -469,8 +413,10 @@ class NHentaiTagBot():
 
 def main():
     reddit = authenticate()
+    database = Database()
     global postsLinked
     postsLinked = getSavedLinkedMessages()
+    tag_bot = NHentaiTagBot(reddit, database)
     while True:
         runBot(reddit)
 
