@@ -213,7 +213,7 @@ class NHentaiTagBot():
                 logString += self.processors[entry['type']].generateReplyString(processedData, entry['number'])
         if replyString:
             # Needs to use ASCII code to not break reddit formatting &#32; is space &#40; is ( and &#41; is )
-            replyString += "---\n\n^(nHentai), )Tsumino(, }e-hentai/token{, !hitomi.la! | min 5 digits | [FAQ](https://www.reddit.com/r/nHentaiTagBot/wiki/index) | [/r/](https://www.reddit.com/r/nHentaiTagBot/) | [Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)".replace(' ', '&#32;').replace('(', '&#40;', 2).replace(')', '&#41;', 2)
+            replyString += "---\n\n^(nHentai), )Tsumino(, }e-hentai/token{ | min 5 digits | [FAQ](https://www.reddit.com/r/nHentaiTagBot/wiki/index) | [/r/](https://www.reddit.com/r/nHentaiTagBot/) | [Source](https://github.com/TheVexedGerman/nHentai-Tag-Bot)".replace(' ', '&#32;').replace('(', '&#40;', 2).replace(')', '&#41;', 2)
         return replyString, logString
 
 
