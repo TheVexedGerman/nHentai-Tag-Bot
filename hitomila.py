@@ -12,6 +12,8 @@ from bs4 import BeautifulSoup
 # db = Database()
 API_URL_HITOMILA = 'https://hitomi.la/galleries/' # needs .html appended
 
+
+# Needs complete rework probably using https://ltn.hitomi.la/galleryblock/719638.html or https://ltn.hitomi.la/galleryblock/719638.html endpoints.
 class Hitomila():
 
     def __init__(self, database):
