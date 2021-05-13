@@ -39,7 +39,7 @@ PARSED_SUBREDDITS = ['Animemes',
 # REDACTED_INFO_SUBS_LV6 = ['Animemes']
 REDACTED_INFO_SUBS_ERROR = ['HentaiSource',
                             'Animemes',
-                            'hentaimemes',
+                            # 'hentaimemes',
                             'goodanimemes',
                             'AstolfoHentai'
                             ]
