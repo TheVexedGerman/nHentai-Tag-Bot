@@ -110,16 +110,18 @@ class NHentaiTagBot():
 
     def scan_comment_and_reply(self, comment):
         if comment.author.name == self.reddit.user.me():
-            return
+            return False
         self.database.execute("SELECT comment_id FROM tag_bot WHERE comment_id = %s", (comment.id,))
         already_replied = self.database.fetchone()
         if already_replied:
-            return
+            return False
         reply_sting, log_string, numbersCombi = self.scan_comment_and_generate_reply(comment)
         if reply_sting and log_string:
             reply = self.writeCommentReply(reply_sting, comment)
             if reply:
                 self.logRequest(log_string, comment, reply, numbersCombi)
+            return True
+        return False
 
 
     def logRequest(self, replyString, comment, reply, numbersCombi):
@@ -218,13 +220,12 @@ class NHentaiTagBot():
         return replyString, logString
 
 
-    #TODO definitely update this
     def processPMs(self):
         print("Current time: " + str(datetime.datetime.now().time()))
         #Adapted from Roboragi
         for message in self.reddit.inbox.unread(limit=None):
             usernameMention = message.subject == 'username mention'
-            usernameInBody = message.subject == 'comment reply' and "u/nhentaitagbot" in message.body.lower()
+            usernameInBody = message.subject == 'comment reply' and f"u/{self.reddit.user.me().name.lower()}" in message.body.lower()
             linkMessage = message.subject == "[Link]" or message.subject == "re: [Link]"
             linkRequestInComment = message.subject == 'comment reply' and "!link" in message.body.lower()
 
@@ -233,7 +234,7 @@ class NHentaiTagBot():
                     self.scanPM(message)
                 if linkRequestInComment:
                     linkComment = self.reddit.comment(message.id)
-                    self.scan_comment_and_reply(linkComment)
+                    self.processCommentReply(linkComment)
                     message.mark_read()
                 continue
 
@@ -247,22 +248,25 @@ class NHentaiTagBot():
                 commentToEdit = None
 
                 for reply in replies:
-                    if (reply.author.name.lower() == 'nhentaitagbot'):
+                    if (reply.author.name.lower() == self.reddit.user.me().name.lower()):
                         ownComments.append(reply)
                 for comment in ownComments:
                     numbers_combi = self.getOldResponses(comment)
                     if numbers_combi:
                         commentToEdit = comment
-                replyString, logstring, numbers_combi = self.scan_comment_and_generate_reply(mentionedComment)
                 try:
-                    if replyString:
-                        if commentToEdit:
-                            commentToEdit.edit(replyString)
-                            message.mark_read()
-                            self.logRequest(logstring, mentionedComment, commentToEdit, numbers_combi)
-                            continue
+                    if commentToEdit:
+                        replyString, logstring, numbers_combi = self.scan_comment_and_generate_reply(mentionedComment)
+                        if replyString:
+                                commentToEdit.edit(replyString)
+                                message.mark_read()
+                                self.logRequest(logstring, mentionedComment, commentToEdit, numbers_combi)
+                                continue
                 except:
                     break
+                comment_handled = self.scan_comment_and_reply(mentionedComment)
+                if comment_handled:
+                    message.mark_read()
                 # if self.scan_comment_and_generate_reply(mentionedComment):
                 #     message.mark_read()
             except:
