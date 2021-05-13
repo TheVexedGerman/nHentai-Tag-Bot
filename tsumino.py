@@ -7,253 +7,255 @@ import re
 import datetime
 from bs4 import BeautifulSoup
 
-from DBConn import Database 
+# from DBConn import Database
 
-db = Database()
+# db = Database()
 
-API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
 # API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/' # Tsumino is changing their url structue https://www.tsumino.com/entry/
 API_URL_TSUMINO = 'https://www.tsumino.com/entry/'
-API_URL_EHENTAI = "https://api.e-hentai.org/api.php"
-LINK_URL_NHENTAI = "https://nhentai.net/g/"
-LINK_URL_EHENTAI = "https://e-hentai.org/g/"
 
-def analyseNumber(galleryNumber):
-    title = ''
-    numberOfPages = 0
-    rating = ''
-    category = []
-    group = []
-    artist = []
-    parody = []
-    tag = []
-    collection = []
-    isRedacted = False
+class Tsumino():
 
-    response = getHTML(galleryNumber)
-    # response = requests.get(API_URL_TSUMINO+str(galleryNumber))
-    # print(response)
-    if response:
-        soup = BeautifulSoup(response, features="html.parser")
-        # title finder
-        try:
-            title = soup.find('div', id="Title").string.replace('\n','')
-            print(title)
-        except:
-            print("No Title")
+    def __init__(self, database):
+        self.database = database
 
-        # pages finder
-        try:
-            numberOfPages = soup.find('div', id="Pages").string.replace('\n','')
-            print(numberOfPages)
-        except:
-            print("No Pages")
+    def analyseNumber(self, galleryNumber):
+        title = ''
+        numberOfPages = 0
+        rating = ''
+        category = []
+        group = []
+        artist = []
+        parody = []
+        tag = []
+        collection = []
+        isRedacted = False
 
-        # rating finder
-        try:
-            rating = soup.find('div', id="Rating").string.replace('\n','')
-            print(rating)
-        except:
-            print("No Rating")
+        response = self.getHTML(galleryNumber)
+        if response:
+            soup = BeautifulSoup(response, features="html.parser")
+            # title finder
+            try:
+                title = soup.find('div', id="Title").string.replace('\n','')
+            except:
+                pass
 
-        # category finder
-        try:
-            category = [a.get('data-define') for a in soup.find('div', id="Category").findAll('a')]
-            print(category)
-        except:
-            print("No Category")
+            # pages finder
+            try:
+                numberOfPages = soup.find('div', id="Pages").string.replace('\n','')
+            except:
+                pass
 
-        # group finder
-        try:
-            group = [a.get('data-define') for a in soup.find('div', id="Group").findAll('a')]
-            print(group)
-        except:
-            print("No Group")
+            # rating finder
+            try:
+                rating = soup.find('div', id="Rating").string.replace('\n','')
+            except:
+                pass
 
-        # artist finder
-        try:
-            artist = [a.get('data-define') for a in soup.find('div', id="Artist").findAll('a')]
-            print(artist)
-        except:
-            print("No Artist")
+            # category finder
+            try:
+                category = [a.get('data-define') for a in soup.find('div', id="Category").findAll('a')]
+            except:
+                pass
 
-        # collection finder
-        try:
-            collection = [a.get('data-define') for a in soup.find('div', id="Collection").findAll('a')]
-            print(collection)
-        except:
-            print("No Collection")
+            # group finder
+            try:
+                group = [a.get('data-define') for a in soup.find('div', id="Group").findAll('a')]
+            except:
+                pass
 
-        # parody finder
-        try:
-            parody = [a.get('data-define') for a in soup.find('div', id="Parody").findAll('a')]
-            print(parody)
-        except:
-            print("No Parody")
+            # artist finder
+            try:
+                artist = [a.get('data-define') for a in soup.find('div', id="Artist").findAll('a')]
+            except:
+                pass
 
-        # character finder
-        try:
-            character = [a.get('data-define') for a in soup.find('div', id="Character").findAll('a')]
-            print(character)
-        except:
-            print("No Character")
+            # collection finder
+            try:
+                collection = [a.get('data-define') for a in soup.find('div', id="Collection").findAll('a')]
+            except:
+                pass
 
-        # tag finder
-        try:
-            tag = [a.get('data-define') for a in soup.find('div', id="Tag").findAll('a')]
-            print(tag)
-        except:
-            print("No Tags")
+            # parody finder
+            try:
+                parody = [a.get('data-define') for a in soup.find('div', id="Parody").findAll('a')]
+            except:
+                pass
 
-        if tag:
-            for entry in tag:
-                if 'loli' in entry.lower():
-                    isRedacted = True
-                elif 'shota' in entry.lower():
-                    isRedacted = True
+            # character finder
+            try:
+                character = [a.get('data-define') for a in soup.find('div', id="Character").findAll('a')]
+            except:
+                pass
 
-        return [title, numberOfPages, rating, category, group, artist, parody, tag, collection, isRedacted]
-    else:
-        return []
+            # tag finder
+            try:
+                tag = [a.get('data-define') for a in soup.find('div', id="Tag").findAll('a')]
+            except:
+                pass
 
+            if tag:
+                for entry in tag:
+                    if 'loli' in entry.lower():
+                        isRedacted = True
+                    elif 'shota' in entry.lower():
+                        isRedacted = True
 
-def generateReplyString(processedData, galleryNumber, censorshipLevel=0, useError=False, generateLink=False):
-    # Title
-    # Uploader (Rejected)
-    # Uploaded (Rejected)
-    # Pages
-    # Rating
-    # My Rating (Rejected)
-    # Category
-    # Group
-    # Collection (optional)
-    # Artist
-    # Parody (optional)
-    # Character
-    # Tag
-    # [title, numberOfPages, rating, category, group, artist, parody, tag, collection]
-    title = 0
-    pages = 1
-    rating = 2
-    category = 3
-    group = 4
-    artist = 5
-    parody = 6
-    tag = 7
-    collection = 8
-    isRedacted = 9
-    replyString = ""
-    print("Tsumino replyStringGenerator Start")
+            return {
+                "title": title,
+                "numberOfPages": numberOfPages,
+                "rating": rating,
+                "category": category,
+                "group": group,
+                "artist": artist,
+                "parody": parody,
+                "tag": tag,
+                "collection": collection,
+                "character": character,
+                "isRedacted": isRedacted
+            }
+        else:
+            return []
 
-    if processedData:
-        #Censorship engine
-        if processedData[isRedacted]:
-            #Level 2
-            if censorshipLevel > 5:
-                return ""
-            if censorshipLevel > 1:
-                # processedData[etc] = ["[REDACTED]" for element in processedData[etc]]
-                if processedData[title]:
-                    processedData[title] = "[REDACTED]"
-                if processedData[artist]:
-                    processedData[artist] = ["[REDACTED]" for element in processedData[artist]]
-                if processedData[group]:
-                    processedData[group] = ["[REDACTED]" for element in processedData[group]]
-            #Level 3
-            if censorshipLevel > 2:
-                if processedData[collection]:
-                    processedData[collection] = ["[REDACTED]" for element in processedData[collection]]
-                if processedData[parody]:
-                    processedData[parody] = ["[REDACTED]" for element in processedData[parody]]
-            #Level 4
-            if censorshipLevel > 3:
-                if processedData[tag]:
-                    processedData[tag] = ["[REDACTED]" if not any(tags in element.lower() for tags in ['loli','shota']) else element for element in processedData[tag]]
-            #Level 5
-            if censorshipLevel > 4:
-                if processedData[pages]:
-                    processedData[pages] = "[REDACTED]"  
-                if processedData[rating]:
-                    processedData[rating] = "[REDACTED]"
-                if processedData[category]:
-                    processedData[category] = ["[REDACTED]" for element in processedData[category]]
+    def generateLinks(self, number):
+        tags = self.analyseNumber(number)
+        if tags.get('isRedacted'):
+            return "This number contains restricted tags and therefore cannot be linked"
+        if len(tags) > 1:
+            return API_URL_TSUMINO + str(number)
 
-        if processedData[isRedacted]:
-            if censorshipLevel > 0:
-                replyString += ">Tsumino: [REDACTED]\n\n"
+    def generateReplyString(self, processedData, galleryNumber, censorshipLevel=0, useError=False, generateLink=False):
+        # Title
+        # Uploader (Rejected)
+        # Uploaded (Rejected)
+        # Pages
+        # Rating
+        # My Rating (Rejected)
+        # Category
+        # Group
+        # Collection (optional)
+        # Artist
+        # Parody (optional)
+        # Character
+        # Tag
+        replyString = ""
+
+        if processedData:
+            #Censorship engine
+            if processedData.get("isRedacted"):
+                #Level 2
+                if censorshipLevel > 5:
+                    return ""
+                if censorshipLevel > 1:
+                    # processedData[etc] = ["[REDACTED]" for element in processedData[etc]]
+                    if processedData.get("title"):
+                        processedData['title'] = "[REDACTED]"
+                    if processedData.get("artist"):
+                        processedData['artist'] = ["[REDACTED]" for element in processedData.get("artist")]
+                    if processedData.get("group"):
+                        processedData['group'] = ["[REDACTED]" for element in processedData.get("group")]
+                #Level 3
+                if censorshipLevel > 2:
+                    if processedData.get("collection"):
+                        processedData['collection'] = ["[REDACTED]" for element in processedData.get("collection")]
+                    if processedData.get("parody"):
+                        processedData['parody'] = ["[REDACTED]" for element in processedData.get("parody")]
+                #Level 4
+                if censorshipLevel > 3:
+                    if processedData.get("tag"):
+                        processedData['tag'] = ["[REDACTED]" if not any(tags in element.lower() for tags in ['loli','shota']) else element for element in processedData.get("tag")]
+                #Level 5
+                if censorshipLevel > 4:
+                    if processedData.get("pages"):
+                        processedData['pages'] = "[REDACTED]"  
+                    if processedData.get("rating"):
+                        processedData['rating'] = "[REDACTED]"
+                    if processedData.get("category"):
+                        processedData['category'] = ["[REDACTED]" for element in processedData.get("category")]
+
+            if processedData.get("isRedacted"):
+                if censorshipLevel > 0:
+                    replyString += ">Tsumino: [REDACTED]\n\n"
+                else:
+                    replyString += f">Tsumino: {str(galleryNumber).zfill(5)}&#32;\n\n"
+                if useError:
+                    replyString += f"{commentpy.generate450string('Tsumino')}\n\n"
+                    return replyString
+            elif generateLink:
+                replyString += f">Tsumino: [{str(galleryNumber).zfill(5)}]({API_URL_TSUMINO}{galleryNumber})\n\n"
             else:
-                replyString += f">Tsumino: {str(galleryNumber).zfill(5)}&#32;\n\n"
-            if useError:
-                replyString += f"{commentpy.generate450string('Tsumino')}\n\n"
-                return replyString
-        elif generateLink:
-            replyString += f">Tsumino: [{str(galleryNumber).zfill(5)}]({API_URL_TSUMINO}{galleryNumber})\n\n"
-        else:
-            replyString += ">Tsumino: " + str(galleryNumber).zfill(5) + "\n\n"
-        if processedData[title]:
-            replyString += "**Title**: " + processedData[title] + "\n\n"
-        replyString += "**Number of pages**: " + str(processedData[pages]) + "\n\n"
-        if processedData[rating]:
-            replyString += "**Rating**: " + processedData[rating] + "\n\n"
+                replyString += f">Tsumino: {str(galleryNumber).zfill(5)}\n\n"
+            if processedData.get("title"):
+                replyString += f"**Title**: {processedData.get('title')}\n\n"
+            replyString += f"**Number of pages**: {str(processedData.get('pages'))}\n\n"
+            if processedData.get("rating"):
+                replyString += f"**Rating**: {processedData.get('rating')}\n\n"
 
-        if processedData[category]:
-            replyString += commentpy.additionalTagsString(processedData[category], "Category", False) + "\n\n"
-        if processedData[group]:
-            replyString += commentpy.additionalTagsString(processedData[group], "Group", False) + "\n\n"
-        if processedData[collection]:
-            replyString += commentpy.additionalTagsString(processedData[collection], "Collection", False) + "\n\n"
-        if processedData[artist]:
-            replyString += commentpy.additionalTagsString(processedData[artist], "Artist", False) + "\n\n"
-        if processedData[parody]:
-            replyString += commentpy.additionalTagsString(processedData[parody], "Parody", False) + "\n\n"
-        if processedData[tag]:
-            replyString += commentpy.additionalTagsString(processedData[tag], "Tag", False) + "\n\n"
-    print("Tsumino replyStringGenerator End")
-    return replyString
+            if processedData.get("category"):
+                replyString += commentpy.additionalTagsString(processedData.get("category"), "Category", False) + "\n\n"
+            if processedData.get("group"):
+                replyString += commentpy.additionalTagsString(processedData.get("group"), "Group", False) + "\n\n"
+            if processedData.get("collection"):
+                replyString += commentpy.additionalTagsString(processedData.get("collection"), "Collection", False) + "\n\n"
+            if processedData.get("artist"):
+                replyString += commentpy.additionalTagsString(processedData.get("artist"), "Artist", False) + "\n\n"
+            if processedData.get("parody"):
+                replyString += commentpy.additionalTagsString(processedData.get("parody"), "Parody", False) + "\n\n"
+            if processedData.get("tag"):
+                replyString += commentpy.additionalTagsString(processedData.get("tag"), "Tag", False) + "\n\n"
+        return replyString
 
 
-def getHTML(galleryNumber):
-    db.execute("SELECT * FROM tsumino WHERE (gallery_number = %s)", [galleryNumber])
-    cachedEntry = db.fetchone()
-    if cachedEntry and ((datetime.datetime.now() - cachedEntry[1]) // datetime.timedelta(days=7)) < 1:
-        print("cache used")
-        return cachedEntry[2]
-    response = requests.get(API_URL_TSUMINO+str(galleryNumber))
-    if response.status_code == 200:
-        if cachedEntry:
-            print("update cache")
-            db.execute("UPDATE tsumino SET last_update = %s, html = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), response.text, int(galleryNumber)))
-        else:
-            print("create cache")
-            db.execute("INSERT INTO tsumino (gallery_number, last_update, html) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.now(), response.text))
-        db.commit()
-        return response.text
+    def getHTML(self, galleryNumber):
+        self.database.execute("SELECT last_update, html FROM tsumino WHERE (gallery_number = %s)", [galleryNumber])
+        cachedEntry = self.database.fetchone()
+        if cachedEntry and ((datetime.datetime.now() - cachedEntry[0]) // datetime.timedelta(days=7)) < 1:
+            return cachedEntry[1]
+        response = requests.get(API_URL_TSUMINO+str(galleryNumber))
+        if response.status_code == 200:
+            if cachedEntry:
+                self.database.execute("UPDATE tsumino SET last_update = %s, html = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), response.text, int(galleryNumber)))
+            else:
+                self.database.execute("INSERT INTO tsumino (gallery_number, last_update, html) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.now(), response.text))
+            self.database.commit()
+            return response.text
 
 
-def getNumbers(comment):
-    numbers = re.findall(r'(?<=\))\d{5}(?=\()', comment)
-    try:
-        numbers = [int(number) for number in numbers]
-    except ValueError:
-        numbers = []
-    numbers = commentpy.removeDuplicates(numbers)
-    return numbers
+    def getNumbers(self, comment):
+        numbers = re.findall(r'(?<=\))\d{5}(?=\()', comment)
+        try:
+            numbers = [int(number) for number in numbers]
+        except ValueError:
+            numbers = []
+        numbers = commentpy.removeDuplicates(numbers)
+        return [{'number': number, 'type': 'tsumino'} for number in numbers]
 
 
-def scanURL(comment):
-    tsuminoNumbers = []
-    # use lowercase comment because tsumino has an inconsistent url scheme 
-    commentLower = comment.lower()
-    tsuminoLinks = re.findall(r'https?:\/\/(?:www.)?tsumino.com\/book\/info\/\d{1,5}', commentLower)
-    tsuminoLinks += re.findall(r'https?:\/\/(?:www.)?tsumino.com\/read\/view\/\d{1,5}', commentLower)
-    tsuminoLinks += re.findall(r'https?:\/\/(?:www.)?tsumino.com\/entry\/\d{1,5}', commentLower)
-    try:
-        tsuminoNumbers = [re.search(r'\d+', link).group(0) for link in tsuminoLinks]
-    except AttributeError:
-        print("No Tsumino links")
-    try:
-        tsuminoNumbers = [int(number) for number in tsuminoNumbers]
-    except ValueError:
+    def remove_and_return_old_results_from_comment(self, comment):
+        tsuminoNumbers = re.findall(r'(?<=>Tsumino: )\d{5,6}', comment)
+        try:
+            tsuminoNumbers = [int(number) for number in tsuminoNumbers]
+        except ValueError:
+            tsuminoNumbers = []
+        comment = re.sub(r'(?<=>Tsumino: )\d{5,6}', '', comment)
+        return [{'number': number, 'type': 'tsumino'} for number in tsuminoNumbers], comment
+
+
+    def scanURL(self, comment):
         tsuminoNumbers = []
-    tsuminoNumbers = commentpy.removeDuplicates(tsuminoNumbers)
-    return tsuminoNumbers
+        # use lowercase comment because tsumino has an inconsistent url scheme 
+        commentLower = comment.lower()
+        tsuminoLinks = re.findall(r'https?:\/\/(?:www.)?tsumino.com\/book\/info\/\d{1,5}', commentLower)
+        tsuminoLinks += re.findall(r'https?:\/\/(?:www.)?tsumino.com\/read\/view\/\d{1,5}', commentLower)
+        tsuminoLinks += re.findall(r'https?:\/\/(?:www.)?tsumino.com\/entry\/\d{1,5}', commentLower)
+        try:
+            tsuminoNumbers = [re.search(r'\d+', link).group(0) for link in tsuminoLinks]
+        except AttributeError:
+            pass
+        try:
+            tsuminoNumbers = [int(number) for number in tsuminoNumbers]
+        except ValueError:
+            tsuminoNumbers = []
+        tsuminoNumbers = commentpy.removeDuplicates(tsuminoNumbers)
+        return [{'number': number, 'type': 'tsumino'} for number in tsuminoNumbers]
+        
