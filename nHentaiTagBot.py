@@ -193,8 +193,8 @@ class NHentaiTagBot():
         censorshipLevel = 0
         # if comment.subreddit in REDACTED_INFO_SUBS_LV6:
         #     censorshipLevel = 6
-        if comment.subreddit in REDACTED_INFO_SUBS_LV1:
-            censorshipLevel = 1
+        # if comment.subreddit in REDACTED_INFO_SUBS_LV1:
+        #     censorshipLevel = 1
         numbersCombi = self.getNumbers(comment)
         replyString, logString = self.generateReplyString(numbersCombi, censorshipLevel, useError, useLink)
         return replyString, logString, numbersCombi
