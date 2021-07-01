@@ -15,8 +15,6 @@ from ehentai import Ehentai
 from tsumino import Tsumino
 from hitomila import Hitomila
 
-import commentpy
-
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
 PARSED_SUBREDDITS = ['Animemes',

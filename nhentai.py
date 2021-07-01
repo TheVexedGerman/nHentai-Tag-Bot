@@ -7,8 +7,6 @@ import re
 import time
 import datetime
 
-# from DBConn import Database
-
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
 LINK_URL_NHENTAI = "https://nhentai.net/g/"
 

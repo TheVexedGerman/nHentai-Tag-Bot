@@ -2,14 +2,9 @@
 import os, sys; sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 import commentpy
 import requests
-import json
 import re
 import datetime
 from bs4 import BeautifulSoup
-
-# from DBConn import Database
-
-# db = Database()
 
 # API_URL_TSUMINO = 'https://www.tsumino.com/Book/Info/' # Tsumino is changing their url structue https://www.tsumino.com/entry/
 API_URL_TSUMINO = 'https://www.tsumino.com/entry/'
