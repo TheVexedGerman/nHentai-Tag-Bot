@@ -208,7 +208,7 @@ class Hitomila():
     def getHTML(self, galleryNumber):
         self.database.execute("SELECT * FROM hitomila WHERE (gallery_number = %s)", [galleryNumber])
         cachedEntry = self.database.fetchone()
-        if cachedEntry and ((datetime.datetime.now() - cachedEntry[1]) // datetime.timedelta(days=7)) < 1:
+        if cachedEntry and ((datetime.datetime.utcnow() - cachedEntry[1]) // datetime.timedelta(days=7)) < 1:
             print("cache used")
             return cachedEntry[2]
         response = requests.get(API_URL_HITOMILA+str(galleryNumber)+".html")
@@ -217,10 +217,10 @@ class Hitomila():
         if response.status_code == 200:
             if cachedEntry:
                 print("update cache")
-                self.database.execute("UPDATE hitomila SET last_update = %s, html = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), response.text, galleryNumber))
+                self.database.execute("UPDATE hitomila SET last_update = %s, html = %s WHERE (gallery_number = %s)", (datetime.datetime.utcnow(), response.text, galleryNumber))
             else:
                 print("create cache")
-                self.database.execute("INSERT INTO hitomila (gallery_number, last_update, html) VALUES (%s, %s, %s)", (galleryNumber, datetime.datetime.now(), response.text))
+                self.database.execute("INSERT INTO hitomila (gallery_number, last_update, html) VALUES (%s, %s, %s)", (galleryNumber, datetime.datetime.utcnow(), response.text))
             self.database.commit()
             return response.text
 

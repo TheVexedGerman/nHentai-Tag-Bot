@@ -172,7 +172,7 @@ class Nhentai():
         self.database.execute("SELECT last_update, json FROM nhentai WHERE (gallery_number = %s)", [galleryNumber])
         cachedEntry = self.database.fetchone()
         # Use cached entry if new enough (less than 7 days old)
-        if cachedEntry and ((datetime.datetime.now() - cachedEntry[0]) // datetime.timedelta(days=7)) < 1:
+        if cachedEntry and ((datetime.datetime.utcnow() - cachedEntry[0]) // datetime.timedelta(days=7)) < 1:
             return cachedEntry[1]
         request = requests.get(API_URL_NHENTAI+galleryNumber)
         if request == None:
@@ -190,9 +190,9 @@ class Nhentai():
         if "error" in nhentaiTags:
             return {'error': 404}
         if cachedEntry:
-            self.database.execute("UPDATE nhentai SET last_update = %s, json = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), request.text, int(galleryNumber)))
+            self.database.execute("UPDATE nhentai SET last_update = %s, json = %s WHERE (gallery_number = %s)", (datetime.datetime.utcnow(), request.text, int(galleryNumber)))
         else:
-            self.database.execute("INSERT INTO nhentai (gallery_number, last_update, json) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.now(), request.text))
+            self.database.execute("INSERT INTO nhentai (gallery_number, last_update, json) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.utcnow(), request.text))
         self.database.commit()
         return nhentaiTags
 

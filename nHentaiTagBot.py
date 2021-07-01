@@ -221,7 +221,7 @@ class NHentaiTagBot():
 
 
     def processPMs(self):
-        print("Current time: " + str(datetime.datetime.now().time()))
+        print("Current time: " + str(datetime.datetime.utcnow().time()))
         #Adapted from Roboragi
         for message in self.reddit.inbox.unread(limit=None):
             usernameMention = message.subject == 'username mention'

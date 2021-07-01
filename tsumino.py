@@ -209,14 +209,14 @@ class Tsumino():
     def getHTML(self, galleryNumber):
         self.database.execute("SELECT last_update, html FROM tsumino WHERE (gallery_number = %s)", [galleryNumber])
         cachedEntry = self.database.fetchone()
-        if cachedEntry and ((datetime.datetime.now() - cachedEntry[0]) // datetime.timedelta(days=7)) < 1:
+        if cachedEntry and ((datetime.datetime.utcnow() - cachedEntry[0]) // datetime.timedelta(days=7)) < 1:
             return cachedEntry[1]
         response = requests.get(API_URL_TSUMINO+str(galleryNumber))
         if response.status_code == 200:
             if cachedEntry:
-                self.database.execute("UPDATE tsumino SET last_update = %s, html = %s WHERE (gallery_number = %s)", (datetime.datetime.now(), response.text, int(galleryNumber)))
+                self.database.execute("UPDATE tsumino SET last_update = %s, html = %s WHERE (gallery_number = %s)", (datetime.datetime.utcnow(), response.text, int(galleryNumber)))
             else:
-                self.database.execute("INSERT INTO tsumino (gallery_number, last_update, html) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.now(), response.text))
+                self.database.execute("INSERT INTO tsumino (gallery_number, last_update, html) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.utcnow(), response.text))
             self.database.commit()
             return response.text
 

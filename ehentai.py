@@ -186,15 +186,15 @@ class Ehentai():
         galleryToken = galleryNumberAndToken[1]
         self.database.execute("SELECT last_update, json FROM ehentai WHERE (gallery_number = %s AND token = %s)", (galleryID, galleryToken))
         cachedEntry = self.database.fetchone()
-        if cachedEntry and ((datetime.datetime.now() - cachedEntry[0]) // datetime.timedelta(days=7)) < 1:
+        if cachedEntry and ((datetime.datetime.utcnow() - cachedEntry[0]) // datetime.timedelta(days=7)) < 1:
             return cachedEntry[1]
         requestString = f'{{"method": "gdata","gidlist": [[{galleryID},"{galleryToken}"]],"namespace": 1}}'
         ehentaiResponse = requests.post(API_URL_EHENTAI, json=json.loads(requestString))
         if ehentaiResponse.status_code == 200:
             if cachedEntry:
-                self.database.execute("UPDATE ehentai SET last_update = %s, json = %s WHERE (gallery_number = %s AND token = %s)", (datetime.datetime.now(), ehentaiResponse.text, galleryID, galleryToken))
+                self.database.execute("UPDATE ehentai SET last_update = %s, json = %s WHERE (gallery_number = %s AND token = %s)", (datetime.datetime.utcnow(), ehentaiResponse.text, galleryID, galleryToken))
             else:
-                self.database.execute("INSERT INTO ehentai (gallery_number, token, last_update, json) VALUES (%s, %s, %s, %s)", (galleryID, galleryToken, datetime.datetime.now(), ehentaiResponse.text))
+                self.database.execute("INSERT INTO ehentai (gallery_number, token, last_update, json) VALUES (%s, %s, %s, %s)", (galleryID, galleryToken, datetime.datetime.utcnow(), ehentaiResponse.text))
         self.database.commit()
         return ehentaiResponse.json()
 
