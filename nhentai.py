@@ -78,7 +78,7 @@ class Nhentai():
         if tags.get('isRedacted'):
             return "This number contains restricted tags and therefore cannot be linked"
         if len(tags) > 1:
-            return LINK_URL_NHENTAI + str(number)
+            return LINK_URL_NHENTAI + str(number) + '/'
 
     def generateReplyString(self, processedData, galleryNumber, censorshipLevel=0, useError=False, generateLink=False):
         # parodies
@@ -139,7 +139,7 @@ class Nhentai():
                     replyString += f"{commentpy.generate450string('nHentai')}\n\n"
                     return replyString
             elif generateLink:
-                replyString += f">[{str(galleryNumber).zfill(5)}]({LINK_URL_NHENTAI}{galleryNumber})\n\n"
+                replyString += f">[{str(galleryNumber).zfill(5)}]({LINK_URL_NHENTAI}{galleryNumber}/)\n\n"
             else:
                 replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
 
