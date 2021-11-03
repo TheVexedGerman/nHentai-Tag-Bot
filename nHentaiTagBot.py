@@ -17,22 +17,24 @@ from hitomila import Hitomila
 
 TIME_BETWEEN_PM_CHECKS = 60  # in seconds
 
-PARSED_SUBREDDITS = ['Animemes',
-                     'hentai_irl',
+PARSED_SUBREDDITS = [
                      'anime_irl',
-                     'u_Loli-Tag-Bot',
-                     'u_nHentaiTagBot',
-                     'HentaiSource',
-                     'CroppedHentaiMemes',
-                     'hentaimemes',
-                     'SauceSharingCommunity',
-                     'jizzedtothisHENTAI',
-                     'nHentaiTagBot',
-                     'hentaidankmemes',
-                     'jizzedtothisPLUS',
-                     'goodanimemes',
+                     'Animemes',
+                     'AquaLewds',
                      'AstolfoHentai',
-                     'AquaLewds'
+                     'CroppedHentaiMemes',
+                     'ffmhentai',
+                     'goodanimemes',
+                     'hentai_irl',
+                     'hentaidankmemes',
+                     'hentaimemes',
+                     'HentaiSource',
+                     'jizzedtothisHENTAI',
+                     'jizzedtothisPLUS',
+                     'nHentaiTagBot',
+                     'SauceSharingCommunity',
+                     'u_Loli-Tag-Bot',
+                     'u_nHentaiTagBot'
                      ]
 # REDACTED_INFO_SUBS_LV6 = ['Animemes']
 REDACTED_INFO_SUBS_ERROR = ['HentaiSource',
