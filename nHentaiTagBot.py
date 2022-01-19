@@ -31,6 +31,7 @@ PARSED_SUBREDDITS = [
                      'HentaiSource',
                      'jizzedtothisHENTAI',
                      'jizzedtothisPLUS',
+                     'nhentai',
                      'nHentaiTagBot',
                      'SauceSharingCommunity',
                      'u_Loli-Tag-Bot',
