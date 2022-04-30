@@ -25,9 +25,10 @@ class Nhentai():
         characters = []
         groups = []
         isRedacted = False
+        error = None
         rawData = self.getJSON(galleryNumber)
-        if rawData and rawData.get('error') == 404:
-            return rawData
+        if rawData and rawData.get('error'):
+            error = rawData.get('error')
         if rawData:
             title = rawData['title']['pretty']
             numberOfPages = rawData['num_pages']
@@ -64,12 +65,13 @@ class Nhentai():
             "parodies": parodies,
             "characters": characters,
             "groups": groups,
-            "isRedacted": isRedacted
+            "isRedacted": isRedacted,
+            "error": error
         }
         
         # Sort the tags by descending popularity to imitate website behavior
         for key in processedData.keys():
-            if not key in ["title", "numberOfPages", "isRedacted"]:
+            if not key in ["title", "numberOfPages", "isRedacted", "error"]:
                 processedData[key] = sorted(processedData[key], key=lambda tags: tags[1], reverse=True)
         return processedData
 
@@ -89,10 +91,14 @@ class Nhentai():
         # languages
         # categories
         replyString = ""
-        if processedData.get('error') == 404:
+        if processedData.get('error'):
             replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
-            replyString += "nHentai returned 404 for this number. The gallery has either been removed or doesn't exist yet.\n\n"
-            return replyString
+            replyString += f"nHentai returned {processedData.get('error')}. "
+            if processedData.get('error') == 404 and not processedData.get('title') :
+                replyString += "The gallery has either been removed or doesn't exist yet.\n\n"
+                return replyString
+            if not processedData.get("isRedacted"):
+                replyString += "Using cached gallery info:\n\n"
         if processedData.get("title"):
             #Censorship engine
             if processedData.get("isRedacted"):
@@ -178,11 +184,13 @@ class Nhentai():
                 return cachedEntry[1]
             else:
                 return []
-        if request.status_code == 404:
+        if request.status_code != 200:
             if cachedEntry:
-                return cachedEntry[1]
+                return_json = cachedEntry[1]
+                return_json.update({'error': request.status_code})
+                return return_json
             else:
-                return {'error': 404}
+                return {'error': request.status_code}
         # nhentaiTags = json.loads(re.search(r'(?<=N.gallery\().*(?=\))', request.text).group(0))
         nhentaiTags = request.json()
         if "error" in nhentaiTags:
