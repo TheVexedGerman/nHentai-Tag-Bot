@@ -93,14 +93,24 @@ class Nhentai():
         # languages
         # categories
         replyString = ""
-        if processedData.get('error'):
-            replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
-            replyString += f"nHentai returned {processedData.get('error')}. "
-            if processedData.get('error') == 404 and not processedData.get('title') :
-                replyString += "The gallery has either been removed or doesn't exist yet.\n\n"
+        if processedData.get("isRedacted"):
+            if censorshipLevel > 0:
+                replyString += ">[REDACTED]\n\n"
+            else:
+                replyString += f">{str(galleryNumber).zfill(5)}&#32;\n\n"
+            if useError:
+                replyString += f"{commentpy.generate450string('nHentai')}\n\n"
                 return replyString
-            if not processedData.get("isRedacted"):
-                replyString += "Using cached gallery info:\n\n"
+        elif generateLink:
+            replyString += f">[{str(galleryNumber).zfill(5)}]({LINK_URL_NHENTAI}{galleryNumber}/)\n\n"
+        else:
+            replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
+        if processedData.get('error'):
+            replyString += f"nHentai returned {processedData.get('error')}. \n\n"
+            if processedData.get('error') == 404 and not processedData.get('title'):
+                replyString = replyString[:-2] + "The gallery has either been removed or doesn't exist yet.\n\n"
+            if processedData.get("title"):
+                replyString = replyString[:-2] + "Using cached gallery info:\n\n"
         if processedData.get("title"):
             #Censorship engine
             if processedData.get("isRedacted"):
@@ -138,18 +148,18 @@ class Nhentai():
                         for element in processedData.get("categories"):
                             element[0] = "[REDACTED]"
                     processedData["numberOfPages"] = "[REDACTED]"
-            if processedData.get("isRedacted"):
-                if censorshipLevel > 0:
-                    replyString += ">[REDACTED]\n\n"
-                else:
-                    replyString += f">{str(galleryNumber).zfill(5)}&#32;\n\n"
-                if useError:
-                    replyString += f"{commentpy.generate450string('nHentai')}\n\n"
-                    return replyString
-            elif generateLink:
-                replyString += f">[{str(galleryNumber).zfill(5)}]({LINK_URL_NHENTAI}{galleryNumber}/)\n\n"
-            else:
-                replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
+            # if processedData.get("isRedacted"):
+            #     if censorshipLevel > 0:
+            #         replyString += ">[REDACTED]\n\n"
+            #     else:
+            #         replyString += f">{str(galleryNumber).zfill(5)}&#32;\n\n"
+            #     if useError:
+            #         replyString += f"{commentpy.generate450string('nHentai')}\n\n"
+            #         return replyString
+            # elif generateLink:
+            #     replyString += f">[{str(galleryNumber).zfill(5)}]({LINK_URL_NHENTAI}{galleryNumber}/)\n\n"
+            # else:
+            #     replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
 
             replyString += "**Title**: " + processedData.get("title") + "\n\n"
             replyString += "**Number of pages**: " + str(processedData.get("numberOfPages")) + "\n\n"
