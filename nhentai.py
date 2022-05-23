@@ -111,6 +111,8 @@ class Nhentai():
                 replyString = replyString[:-2] + "The gallery has either been removed or doesn't exist yet.\n\n"
             if processedData.get("title"):
                 replyString = replyString[:-2] + "Using cached gallery info:\n\n"
+            else:
+                replyString = replyString[:-2] + "Gallery info couldn't be retrieved at the moment.\n\n"
         if processedData.get("title"):
             #Censorship engine
             if processedData.get("isRedacted"):
