@@ -29,6 +29,8 @@ class Nhentai():
         rawData = self.getJSON(galleryNumber)
         if rawData and rawData.get('error'):
             error = rawData.get('error')
+            if len(rawData) == 1:
+                return rawData
         if rawData:
             title = rawData['title']['pretty']
             numberOfPages = rawData['num_pages']
