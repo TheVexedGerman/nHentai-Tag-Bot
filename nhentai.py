@@ -194,7 +194,7 @@ class Nhentai():
         self.database.execute("SELECT last_update, json FROM nhentai WHERE (gallery_number = %s)", [galleryNumber])
         cachedEntry = self.database.fetchone()
         # Use cached entry if new enough (less than 7 days old)
-        if cachedEntry and ((datetime.datetime.utcnow() - cachedEntry[0]) // datetime.timedelta(days=365)) < 1:
+        if cachedEntry and ((datetime.datetime.utcnow() - cachedEntry[0]) // datetime.timedelta(days=7)) < 1:
             return cachedEntry[1]
         # request = requests.get(API_URL_NHENTAI+galleryNumber)
         proxy = requests.post(PROXY_URL, json={"cmd": "request.get", "session":"nhentai", "url":API_URL_NHENTAI+galleryNumber, "maxTimeout": 30000})
