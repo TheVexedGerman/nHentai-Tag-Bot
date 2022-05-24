@@ -7,12 +7,16 @@ import re
 import time
 import datetime
 
+from postgres_credentials import PROXY_URL
+
 API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
 LINK_URL_NHENTAI = "https://nhentai.net/g/"
 
 class Nhentai():
     def __init__(self, database):
         self.database = database
+        # create session
+        requests.post(PROXY_URL, json={"cmd": "sessions.create", "session":"nhentai"})
 
     def analyseNumber(self, galleryNumber):
         title = ''
@@ -108,10 +112,10 @@ class Nhentai():
         if processedData.get('error'):
             replyString += f"nHentai returned {processedData.get('error')}. \n\n"
             if processedData.get('error') == 404 and not processedData.get('title'):
-                replyString = replyString[:-2] + "The gallery has either been removed or doesn't exist yet.\n\n"
+                replyString = replyString[:-2] + "The gallery has either been removed or doesn't exist yet. \n\n"
             if processedData.get("title"):
                 replyString = replyString[:-2] + "Using cached gallery info:\n\n"
-            else:
+            elif processedData.get('error') != 404:
                 replyString = replyString[:-2] + "Gallery info couldn't be retrieved at the moment.\n\n"
         if processedData.get("title"):
             #Censorship engine
@@ -190,29 +194,39 @@ class Nhentai():
         self.database.execute("SELECT last_update, json FROM nhentai WHERE (gallery_number = %s)", [galleryNumber])
         cachedEntry = self.database.fetchone()
         # Use cached entry if new enough (less than 7 days old)
-        if cachedEntry and ((datetime.datetime.utcnow() - cachedEntry[0]) // datetime.timedelta(days=7)) < 1:
+        if cachedEntry and ((datetime.datetime.utcnow() - cachedEntry[0]) // datetime.timedelta(days=365)) < 1:
             return cachedEntry[1]
-        request = requests.get(API_URL_NHENTAI+galleryNumber)
-        if request == None:
+        # request = requests.get(API_URL_NHENTAI+galleryNumber)
+        proxy = requests.post(PROXY_URL, json={"cmd": "request.get", "session":"nhentai", "url":API_URL_NHENTAI+galleryNumber, "maxTimeout": 30000})
+        proxy_tags = json.loads(proxy.text)
+        if proxy == None:
             if cachedEntry:
                 return cachedEntry[1]
             else:
                 return []
-        if request.status_code != 200:
+        if proxy.status_code != 200 or (proxy.status_code == 200 and proxy_tags.get('solution') and proxy_tags.get('solution').get('status') != 200):
+            if proxy_tags.get('status') == 'error':
+                error = 408
+            else:
+                error = proxy_tags['solution']['status']
             if cachedEntry:
                 return_json = cachedEntry[1]
-                return_json.update({'error': request.status_code})
+                return_json.update({'error': error})
                 return return_json
             else:
-                return {'error': request.status_code}
+                return {'error': error}
+        htmltags = proxy_tags['solution']['response'] 
+        texttags = htmltags.replace('<html><head><link rel="stylesheet" href="resource://content-accessible/plaintext.css"></head><body><pre>', '').replace('</pre></body></html>', '')
+        
         # nhentaiTags = json.loads(re.search(r'(?<=N.gallery\().*(?=\))', request.text).group(0))
-        nhentaiTags = request.json()
+        nhentaiTags = json.loads(texttags)
+        # nhentaiTags = proxy_tags['solution']['response']
         if "error" in nhentaiTags:
             return {'error': 404}
         if cachedEntry:
-            self.database.execute("UPDATE nhentai SET last_update = %s, json = %s WHERE (gallery_number = %s)", (datetime.datetime.utcnow(), request.text, int(galleryNumber)))
+            self.database.execute("UPDATE nhentai SET last_update = %s, json = %s WHERE (gallery_number = %s)", (datetime.datetime.utcnow(), json.dumps(nhentaiTags), int(galleryNumber)))
         else:
-            self.database.execute("INSERT INTO nhentai (gallery_number, last_update, json) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.utcnow(), request.text))
+            self.database.execute("INSERT INTO nhentai (gallery_number, last_update, json) VALUES (%s, %s, %s)", (int(galleryNumber), datetime.datetime.utcnow(), json.dumps(nhentaiTags)))
         self.database.commit()
         return nhentaiTags
 
