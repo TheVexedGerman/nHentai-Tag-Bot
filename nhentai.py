@@ -6,6 +6,7 @@ import json
 import re
 import time
 import datetime
+import uuid
 
 from postgres_credentials import PROXY_URL
 
@@ -16,7 +17,11 @@ class Nhentai():
     def __init__(self, database):
         self.database = database
         # create session
-        requests.post(PROXY_URL, json={"cmd": "sessions.create", "session":"nhentai"})
+        self.session = str(uuid.uuid4())
+        requests.post(PROXY_URL, json={"cmd": "sessions.create", "session":self.session})
+
+    def __del__(self):
+        requests.post(PROXY_URL, json={"cmd": "sessions.destroy", "session":self.session})
 
     def analyseNumber(self, galleryNumber):
         title = ''
@@ -154,18 +159,6 @@ class Nhentai():
                         for element in processedData.get("categories"):
                             element[0] = "[REDACTED]"
                     processedData["numberOfPages"] = "[REDACTED]"
-            # if processedData.get("isRedacted"):
-            #     if censorshipLevel > 0:
-            #         replyString += ">[REDACTED]\n\n"
-            #     else:
-            #         replyString += f">{str(galleryNumber).zfill(5)}&#32;\n\n"
-            #     if useError:
-            #         replyString += f"{commentpy.generate450string('nHentai')}\n\n"
-            #         return replyString
-            # elif generateLink:
-            #     replyString += f">[{str(galleryNumber).zfill(5)}]({LINK_URL_NHENTAI}{galleryNumber}/)\n\n"
-            # else:
-            #     replyString += ">" + str(galleryNumber).zfill(5) + "\n\n"
 
             replyString += "**Title**: " + processedData.get("title") + "\n\n"
             replyString += "**Number of pages**: " + str(processedData.get("numberOfPages")) + "\n\n"
@@ -197,7 +190,7 @@ class Nhentai():
         if cachedEntry and ((datetime.datetime.utcnow() - cachedEntry[0]) // datetime.timedelta(days=7)) < 1:
             return cachedEntry[1]
         # request = requests.get(API_URL_NHENTAI+galleryNumber)
-        proxy = requests.post(PROXY_URL, json={"cmd": "request.get", "session":"nhentai", "url":API_URL_NHENTAI+galleryNumber, "maxTimeout": 30000})
+        proxy = requests.post(PROXY_URL, json={"cmd": "request.get", "session":self.session, "url":API_URL_NHENTAI+galleryNumber, "maxTimeout": 30000})
         proxy_tags = json.loads(proxy.text)
         if proxy == None:
             if cachedEntry:
