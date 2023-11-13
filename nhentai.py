@@ -184,7 +184,14 @@ class Nhentai():
         # Use cached entry if new enough (less than 7 days old)
         if cachedEntry and ((datetime.datetime.utcnow() - cachedEntry[0]) // datetime.timedelta(days=7)) < 1:
             return cachedEntry[1]
-        request = requests.get(API_URL_NHENTAI+galleryNumber)
+        try:
+            request = requests.get(API_URL_NHENTAI+galleryNumber)
+        # TODO make error more specifc to connection refused.
+        except Exception as e:
+            if cachedEntry:
+                return cachedEntry[1]
+            else:
+                return {'error': 408}
         if request == None:
             if cachedEntry:
                 return cachedEntry[1]
@@ -249,3 +256,10 @@ class Nhentai():
             nhentaiNumbers = []
         nhentaiNumbers = commentpy.removeDuplicates(nhentaiNumbers)
         return [{'number': number, 'type': 'nhentai'} for number in nhentaiNumbers]
+
+
+from DBConn import Database
+databae = Database()
+nhentai = Nhentai(databae)
+r = nhentai.getJSON(481105)
+print(r)
