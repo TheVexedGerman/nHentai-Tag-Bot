@@ -1,5 +1,8 @@
+aiohttp
 beautifulsoup4
 praw
 prawcore
 psycopg2-binary
 requests
+selenium
+undetected_chromedriver

@@ -10,18 +10,13 @@ import uuid
 
 from postgres_credentials import PROXY_URL
 
-API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
+# API_URL_NHENTAI = 'https://nhentai.net/api/gallery/'
+API_URL_NHENTAI = PROXY_URL
 LINK_URL_NHENTAI = "https://nhentai.net/g/"
 
 class Nhentai():
     def __init__(self, database):
         self.database = database
-        # create session
-        self.session = str(uuid.uuid4())
-        requests.post(PROXY_URL, json={"cmd": "sessions.create", "session":self.session})
-
-    def __del__(self):
-        requests.post(PROXY_URL, json={"cmd": "sessions.destroy", "session":self.session})
 
     def analyseNumber(self, galleryNumber):
         title = ''
@@ -189,31 +184,21 @@ class Nhentai():
         # Use cached entry if new enough (less than 7 days old)
         if cachedEntry and ((datetime.datetime.utcnow() - cachedEntry[0]) // datetime.timedelta(days=7)) < 1:
             return cachedEntry[1]
-        # request = requests.get(API_URL_NHENTAI+galleryNumber)
-        proxy = requests.post(PROXY_URL, json={"cmd": "request.get", "session":self.session, "url":API_URL_NHENTAI+galleryNumber, "maxTimeout": 30000})
-        proxy_tags = json.loads(proxy.text)
-        if proxy == None:
+        request = requests.get(API_URL_NHENTAI+galleryNumber)
+        if request == None:
             if cachedEntry:
                 return cachedEntry[1]
             else:
                 return []
-        if proxy.status_code != 200 or (proxy.status_code == 200 and proxy_tags.get('solution') and proxy_tags.get('solution').get('status') != 200):
-            if proxy_tags.get('status') == 'error':
-                error = 408
-            else:
-                error = proxy_tags['solution']['status']
+        if request.status_code != 200:
             if cachedEntry:
                 return_json = cachedEntry[1]
-                return_json.update({'error': error})
+                return_json.update({'error': request.status_code})
                 return return_json
             else:
-                return {'error': error}
-        htmltags = proxy_tags['solution']['response'] 
-        texttags = htmltags.replace('<html><head><link rel="stylesheet" href="resource://content-accessible/plaintext.css"></head><body><pre>', '').replace('</pre></body></html>', '')
-        
+                return {'error': request.status_code}
         # nhentaiTags = json.loads(re.search(r'(?<=N.gallery\().*(?=\))', request.text).group(0))
-        nhentaiTags = json.loads(texttags)
-        # nhentaiTags = proxy_tags['solution']['response']
+        nhentaiTags = request.json()
         if "error" in nhentaiTags:
             return {'error': 404}
         if cachedEntry:
