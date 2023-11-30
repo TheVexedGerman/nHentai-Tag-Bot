@@ -257,9 +257,11 @@ class Nhentai():
         nhentaiNumbers = commentpy.removeDuplicates(nhentaiNumbers)
         return [{'number': number, 'type': 'nhentai'} for number in nhentaiNumbers]
 
-
-from DBConn import Database
-databae = Database()
-nhentai = Nhentai(databae)
-r = nhentai.getJSON(481105)
-print(r)
+if __name__ == '__main__':
+    from DBConn import Database
+    databae = Database()
+    nhentai = Nhentai(databae)
+    number = int(sys.argv[1])
+    a = nhentai.analyseNumber(number)
+    r = nhentai.generateReplyString(a, number)
+    print(r)
