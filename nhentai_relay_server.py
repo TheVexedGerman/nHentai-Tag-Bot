@@ -23,7 +23,7 @@ async def handle(request):
         WebDriverWait(driver, timeout=30).until(EC.presence_of_element_located((By.XPATH, '//meta[@name="color-scheme"]')))
     except:
         error = 408
-        return web.json_response({'error': error})
+        return web.Response(text="408 Error", status=error)
     element = driver.find_element(By.XPATH, "//pre")
     nhentaiTags = json.loads(element.text)
     return web.json_response(nhentaiTags)
