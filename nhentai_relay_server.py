@@ -1,10 +1,13 @@
 import json
 from aiohttp import web
+from aiohttp import ClientSession
 import undetected_chromedriver as uc
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
+
+from postgres_credentials import DISCORD_HOOK_URL
 
 from DBConn import Database
 database = Database()
@@ -23,6 +26,11 @@ async def handle(request):
         WebDriverWait(driver, timeout=30).until(EC.presence_of_element_located((By.XPATH, '//meta[@name="color-scheme"]')))
     except:
         error = 408
+        async with ClientSession() as session:
+            response = await session.post(url=DISCORD_HOOK_URL,
+                                        data={"username": "nHentai-Relay", "content": f"Fetching number {galleryNumber} failed"},
+                                        headers={"Content-Type": "application/json"})
+            print(await response.json())
         return web.Response(text="408 Error", status=error)
     element = driver.find_element(By.XPATH, "//pre")
     nhentaiTags = json.loads(element.text)
