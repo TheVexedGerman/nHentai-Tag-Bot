@@ -27,8 +27,8 @@ async def handle(request):
     except:
         error = 408
         async with ClientSession() as session:
-            response = await session.post(url=DISCORD_HOOK_URL,
-                                        data={"username": "nHentai-Relay", "content": f"Fetching number {galleryNumber} failed"},
+            response = await session.get(url=DISCORD_HOOK_URL,
+                                        data='{"username": "nHentai-Relay", "content": f"Failed fetching gallery"}',
                                         headers={"Content-Type": "application/json"})
             print(await response.json())
         return web.Response(text="408 Error", status=error)
