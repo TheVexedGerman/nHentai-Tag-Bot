@@ -28,6 +28,7 @@ PARSED_SUBREDDITS = [
                      'hentai_irl',
                      'hentaidankmemes',
                      'hentaimemes',
+                     'hentainocontext',
                      'HentaiSource',
                      'jizzedtothisHENTAI',
                      'jizzedtothisPLUS',
